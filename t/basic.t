@@ -36,6 +36,13 @@ is_deeply(
     'expected output',
 ) or diag explain $result;
 
+eval { JavaScript::QuickJS::run('[].foo.bar.baz = 234') };
+my $err = $@;
+
+like($err, qr<TypeError>, 'error type is given');
+like($err, qr<bar>, 'error detail (key) is given');
+like($err, qr<undefined>, 'error detail (bad value) is given');
+
 done_testing;
 
 1;

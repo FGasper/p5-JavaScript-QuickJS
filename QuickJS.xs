@@ -167,11 +167,17 @@ run (SV* js_code_sv)
             /* Ideal here is to capture all aspects of the error object,
                including its `name` and members. But for now just give
                a string.
+
+                JSValue jslen = JS_GetPropertyStr(ctx, jserr, "name");
+                STRLEN namelen;
+                const char* namestr = JS_ToCStringLen(ctx, &namelen, jslen);
             */
 
             STRLEN strlen;
             const char* str = JS_ToCStringLen(ctx, &strlen, jserr);
+
             err = newSVpvn_flags(str, strlen, SVf_UTF8);
+
             JS_FreeValue(ctx, jserr);
         }
         else {
