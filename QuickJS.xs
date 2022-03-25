@@ -39,6 +39,7 @@ static inline SV* _JSValue_object_to_SV (pTHX_ JSContext* ctx, JSValue jsval) {
 
         hv_store(hv, keystr, -strlen, _JSValue_to_SV(aTHX_ ctx, value), 0);
 
+        JS_FreeCString(ctx, keystr);
         JS_FreeValue(ctx, key);
         JS_FreeValue(ctx, value);
         JS_FreeAtom(ctx, tab_atom[i].atom);
@@ -66,59 +67,64 @@ static inline SV* _JSValue_array_to_SV (pTHX_ JSContext* ctx, JSValue jsval) {
     return newRV_noinc((SV*) av);
 }
 
-/* NO exceptions allowed here! */
+/* NO JS exceptions allowed here! */
 static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval) {
     SV* RETVAL;
 
-    if (JS_IsArray(ctx, jsval)) {
-        RETVAL = _JSValue_array_to_SV(aTHX_ ctx, jsval);
-    }
-    else {
-        switch (JS_VALUE_GET_TAG(jsval)) {
-            case JS_TAG_EXCEPTION:
-                croak("DEV ERROR: Exception must be unwrapped!");
+    switch (JS_VALUE_GET_TAG(jsval)) {
+        case JS_TAG_EXCEPTION:
+            croak("DEV ERROR: Exception must be unwrapped!");
 
-            case JS_TAG_STRING:
-                STMT_START {
-                    STRLEN strlen;
-                    const char* str = JS_ToCStringLen(ctx, &strlen, jsval);
-                    RETVAL = newSVpvn_flags(str, strlen, SVf_UTF8);
-                } STMT_END;
-                break;
+        case JS_TAG_STRING:
+            STMT_START {
+                STRLEN strlen;
+                const char* str = JS_ToCStringLen(ctx, &strlen, jsval);
+                RETVAL = newSVpvn_flags(str, strlen, SVf_UTF8);
+                JS_FreeCString(ctx, str);
+            } STMT_END;
+            break;
 
-            case JS_TAG_INT:
-                RETVAL = newSViv(JS_VALUE_GET_INT(jsval));
-                break;
+        case JS_TAG_INT:
+            RETVAL = newSViv(JS_VALUE_GET_INT(jsval));
+            break;
 
-            case JS_TAG_FLOAT64:
-                RETVAL = newSVnv(JS_VALUE_GET_FLOAT64(jsval));
-                break;
+        case JS_TAG_FLOAT64:
+            RETVAL = newSVnv(JS_VALUE_GET_FLOAT64(jsval));
+            break;
 
-            case JS_TAG_BOOL:
-                RETVAL = boolSV(JS_VALUE_GET_BOOL(jsval));
-                break;
+        case JS_TAG_BOOL:
+            RETVAL = boolSV(JS_VALUE_GET_BOOL(jsval));
+            break;
 
-            case JS_TAG_NULL:
-            case JS_TAG_UNDEFINED:
-                RETVAL = &PL_sv_undef;
-                break;
+        case JS_TAG_NULL:
+        case JS_TAG_UNDEFINED:
+            RETVAL = &PL_sv_undef;
+            break;
 
-            case JS_TAG_OBJECT:
+        case JS_TAG_OBJECT:
+            if (JS_IsFunction(ctx, jsval)) {
+                croak("Cannot convert JS function to Perl!");
+            }
+            else if (JS_IsArray(ctx, jsval)) {
+                RETVAL = _JSValue_array_to_SV(aTHX_ ctx, jsval);
+            }
+            else {
                 RETVAL = _JSValue_object_to_SV(aTHX_ ctx, jsval);
-                break;
+            }
 
-            default:
-                STMT_START {
-                    const char* typename = _jstype_name(JS_VALUE_GET_TAG(jsval));
+            break;
 
-                    if (typename) {
-                        croak("Cannot convert JS %s (QuickJS tag %d) to Perl!", typename, JS_VALUE_GET_TAG(jsval));
-                    }
-                    else {
-                        croak("Cannot convert (unexpected) JS tag value %d to Perl!", JS_VALUE_GET_TAG(jsval));
-                    }
-                } STMT_END;
-        }
+        default:
+            STMT_START {
+                const char* typename = _jstype_name(JS_VALUE_GET_TAG(jsval));
+
+                if (typename) {
+                    croak("Cannot convert JS %s (QuickJS tag %d) to Perl!", typename, JS_VALUE_GET_TAG(jsval));
+                }
+                else {
+                    croak("Cannot convert (unexpected) JS tag value %d to Perl!", JS_VALUE_GET_TAG(jsval));
+                }
+            } STMT_END;
     }
 
     return RETVAL;
@@ -139,6 +145,8 @@ static inline void _add_niceties_to_rt (JSRuntime *rt) {
 /* ---------------------------------------------------------------------- */
 
 MODULE = JavaScript::QuickJS        PACKAGE = JavaScript::QuickJS
+
+PROTOTYPES: DISABLE
 
 SV*
 run (SV* js_code_sv)
@@ -178,6 +186,7 @@ run (SV* js_code_sv)
 
             err = newSVpvn_flags(str, strlen, SVf_UTF8);
 
+            JS_FreeCString(ctx, str);
             JS_FreeValue(ctx, jserr);
         }
         else {
@@ -193,5 +202,3 @@ run (SV* js_code_sv)
 
     OUTPUT:
         RETVAL
-
-PROTOTYPES: DISABLE

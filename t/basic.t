@@ -18,7 +18,7 @@ my $result = JavaScript::QuickJS::run( q<
         99.9999,
         [ "abc", "ünicøde" ],
         { foo: "bar", baz: undefined, undefined: null },
-    ]
+    ];
 > );
 
 is_deeply(
