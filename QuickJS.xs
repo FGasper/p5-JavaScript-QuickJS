@@ -162,7 +162,9 @@ static JSValue _sv_to_jsvalue(pTHX_ JSContext* ctx, SV* value);
 
 static JSValue __do_perl_callback(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int jsmagic, JSValue *func_data) {
     ctx_opaque_s* ctxdata = JS_GetContextOpaque(ctx);
+#ifdef MULTIPLICITY
     pTHX = ctxdata->aTHX;
+#endif
 
     PERL_UNUSED_VAR(jsmagic);
     SV* cb_sv = ((SV**) func_data)[0];
