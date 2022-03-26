@@ -1,4 +1,5 @@
 #include "easyxs/easyxs.h"
+
 #include "quickjs/quickjs.h"
 #include "quickjs/quickjs-libc.h"
 
@@ -130,17 +131,9 @@ static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval) {
     return RETVAL;
 }
 
-static inline void _add_niceties_to_ctx (JSContext *ctx) {
-    js_std_add_helpers(ctx, 0, NULL);
-
-    js_init_module_std(ctx, "std");
-    js_init_module_os(ctx, "os");
-}
-
-static inline void _add_niceties_to_rt (JSRuntime *rt) {
-    /* loader for ES6 modules */
-    JS_SetModuleLoaderFunc(rt, NULL, js_module_loader, NULL);
-}
+typedef struct {
+    JSContext *ctx;
+} perl_qjs_s;
 
 /* ---------------------------------------------------------------------- */
 
@@ -149,22 +142,72 @@ MODULE = JavaScript::QuickJS        PACKAGE = JavaScript::QuickJS
 PROTOTYPES: DISABLE
 
 SV*
-run (SV* js_code_sv)
+new (SV* classname_sv)
     CODE:
         JSRuntime *rt = JS_NewRuntime();
-        _add_niceties_to_rt(rt);
-
-        // Assuming this is off by default because this wasn’t how
-        // JS engines originally worked?
-        //JS_SetHostPromiseRejectionTracker(rt, js_std_promise_rejection_tracker, NULL);
+        JS_SetHostPromiseRejectionTracker(rt, js_std_promise_rejection_tracker, NULL);
+        JS_SetModuleLoaderFunc(rt, NULL, js_module_loader, NULL);
 
         JSContext *ctx = JS_NewContext(rt);
-        _add_niceties_to_ctx(ctx);
+
+        RETVAL = exs_new_structref(perl_qjs_s, SvPVbyte_nolen(classname_sv));
+        perl_qjs_s* pqjs = exs_structref_ptr(RETVAL);
+
+        pqjs->ctx = ctx;
+
+    OUTPUT:
+        RETVAL
+
+void
+DESTROY (SV* self_sv)
+    CODE:
+        perl_qjs_s* pqjs = exs_structref_ptr(self_sv);
+        JSContext *ctx = pqjs->ctx;
+        JSRuntime *rt = JS_GetRuntime(ctx);
+
+        JS_FreeContext(ctx);
+        JS_FreeRuntime(rt);
+
+SV*
+std (SV* self_sv)
+    ALIAS:
+        os = 1
+        helpers = 2
+    CODE:
+        perl_qjs_s* pqjs = exs_structref_ptr(self_sv);
+
+        switch (ix) {
+            case 0:
+                js_init_module_std(pqjs->ctx, "std");
+                break;
+            case 1:
+                js_init_module_os(pqjs->ctx, "os");
+                break;
+            case 2:
+                js_std_add_helpers(pqjs->ctx, 0, NULL);
+
+            default:
+                assert(0);
+        }
+
+        RETVAL = SvREFCNT_inc(self_sv);
+
+    OUTPUT:
+        RETVAL
+
+SV*
+eval (SV* self_sv, SV* js_code_sv)
+    ALIAS:
+        eval_module = 1
+    CODE:
+        perl_qjs_s* pqjs = exs_structref_ptr(self_sv);
+        JSContext *ctx = pqjs->ctx;
 
         STRLEN js_code_len;
         const char* js_code = SvPVutf8(js_code_sv, js_code_len);
 
-        JSValue jsret = JS_Eval(ctx, js_code, js_code_len, "", JS_EVAL_TYPE_GLOBAL);
+        int eval_flags = ix ? JS_EVAL_TYPE_MODULE : JS_EVAL_TYPE_GLOBAL;
+        JSValue jsret = JS_Eval(ctx, js_code, js_code_len, "", eval_flags);
 
         SV* err;
 
@@ -195,8 +238,6 @@ run (SV* js_code_sv)
         }
 
         JS_FreeValue(ctx, jsret);
-        JS_FreeContext(ctx);
-        JS_FreeRuntime(rt);
 
         if (err) croak_sv(err);
 

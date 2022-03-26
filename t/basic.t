@@ -8,7 +8,9 @@ use Test::FailWarnings;
 
 use JavaScript::QuickJS;
 
-my $result = JavaScript::QuickJS::run( q<
+my $js = JavaScript::QuickJS->new();
+
+my $result = $js->eval( q<
     [
         true,
         false,
@@ -36,7 +38,7 @@ is_deeply(
     'expected output',
 ) or diag explain $result;
 
-eval { JavaScript::QuickJS::run('[].foo.bar.baz = 234') };
+eval { $js->eval('[].foo.bar.baz = 234') };
 my $err = $@;
 
 like($err, qr<TypeError>, 'error type is given');
