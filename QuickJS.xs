@@ -235,6 +235,20 @@ static JSValue _sv_to_jsvalue(pTHX_ JSContext* ctx, SV* value) {
     croak("Cannot convert %" SVf " to JavaScript!", value);
 }
 
+JSContext* _create_new_jsctx( pTHX_ JSRuntime *rt ) {
+    JSContext *ctx = JS_NewContext(rt);
+
+    ctx_opaque_s* ctxdata;
+    Newxz(ctxdata, 1, ctx_opaque_s);
+    JS_SetContextOpaque(ctx, ctxdata);
+
+#ifdef MULTIPLICITY
+    ctxdata->aTHX = aTHX;
+#endif
+
+    return ctx;
+}
+
 /* ---------------------------------------------------------------------- */
 
 MODULE = JavaScript::QuickJS        PACKAGE = JavaScript::QuickJS
@@ -248,15 +262,7 @@ new (SV* classname_sv)
         JS_SetHostPromiseRejectionTracker(rt, js_std_promise_rejection_tracker, NULL);
         JS_SetModuleLoaderFunc(rt, NULL, js_module_loader, NULL);
 
-        JSContext *ctx = JS_NewContext(rt);
-
-        ctx_opaque_s* ctxdata;
-        Newxz(ctxdata, 1, ctx_opaque_s);
-        JS_SetContextOpaque(ctx, ctxdata);
-
-    #ifdef MULTIPLICITY
-        ctxdata->aTHX = aTHX;
-    #endif
+        JSContext *ctx = _create_new_jsctx(aTHX_ rt);
 
         RETVAL = exs_new_structref(perl_qjs_s, SvPVbyte_nolen(classname_sv));
         perl_qjs_s* pqjs = exs_structref_ptr(RETVAL);
