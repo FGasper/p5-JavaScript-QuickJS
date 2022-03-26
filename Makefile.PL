@@ -6,7 +6,7 @@ use Cwd;
 
 chdir 'quickjs' or die "chdir(quickjs): $!";
 
-system $Config{'make'}, 'libquickjs.a' and die;
+system $Config{'make'} and die;
 
 chdir '..' or die "chdir(..): $!";;
 
