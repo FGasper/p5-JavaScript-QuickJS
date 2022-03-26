@@ -3,6 +3,18 @@
 #include "quickjs/quickjs.h"
 #include "quickjs/quickjs-libc.h"
 
+typedef struct {
+    JSContext *ctx;
+} perl_qjs_s;
+
+typedef struct {
+#ifdef MULTIPLICITY
+    pTHX;
+#endif
+    SV** svs;
+    U32 svs_count;
+} ctx_opaque_s;
+
 const char* __jstype_name_back[] = {
     [JS_TAG_BIG_DECIMAL - JS_TAG_FIRST] = "big decimal",
     [JS_TAG_BIG_INT - JS_TAG_FIRST] = "big int",
@@ -131,9 +143,95 @@ static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval) {
     return RETVAL;
 }
 
-typedef struct {
-    JSContext *ctx;
-} perl_qjs_s;
+static inline void _ctx_add_sv(pTHX_ JSContext* ctx, SV* sv) {
+    ctx_opaque_s* ctxdata = JS_GetContextOpaque(ctx);
+
+    ctxdata->svs_count++;
+
+    if (ctxdata->svs_count == 1) {
+        Newx(ctxdata->svs, ctxdata->svs_count, SV*);
+    }
+    else {
+        Renew(ctxdata->svs, ctxdata->svs_count, SV*);
+    }
+
+    ctxdata->svs[ctxdata->svs_count - 1] = SvREFCNT_inc(sv);
+}
+
+static JSValue _sv_to_jsvalue(pTHX_ JSContext* ctx, SV* value);
+
+static JSValue __do_perl_callback(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int jsmagic, JSValue *func_data) {
+    ctx_opaque_s* ctxdata = JS_GetContextOpaque(ctx);
+    pTHX = ctxdata->aTHX;
+
+    PERL_UNUSED_VAR(jsmagic);
+    SV* cb_sv = ((SV**) func_data)[0];
+
+    SV* args[argc + 1];
+    args[argc] = NULL;
+
+    // TODO: Avoid exceptions here:
+    for (int a=0; a<argc; a++) {
+        args[a] = _JSValue_to_SV(aTHX_ ctx, argv[a]);
+    }
+
+    // TODO: Trap exceptions
+    SV* retval = exs_call_sv_scalar(cb_sv, args);
+
+    return _sv_to_jsvalue(aTHX_ ctx, retval);
+}
+
+static JSValue _sv_to_jsvalue(pTHX_ JSContext* ctx, SV* value) {
+    if (!SvOK(value)) {
+        return JS_NULL;
+    }
+
+    if (SvROK(value)) {
+        switch (SvTYPE(SvRV(value))) {
+            case SVt_PVCV:
+                _ctx_add_sv(aTHX_ ctx, value);
+                return JS_NewCFunctionData(
+                    ctx,
+                    __do_perl_callback,
+                    0, 0,
+                    1, &(JS_MKPTR(JS_TAG_INT, value))
+                );
+
+            default:
+                /* We’ll croak below. */
+                break;
+        }
+    }
+    else {
+        if (SvNOK(value)) {
+            return JS_NewFloat64(ctx, (double) SvNV(value));
+        }
+
+        if (SvUOK(value)) {
+            if (sizeof(IV) == sizeof(uint64_t)) {
+                return JS_NewInt64(ctx, (uint64_t) SvIV(value));
+            }
+
+            return JS_NewInt32(ctx, (uint32_t) SvIV(value));
+        }
+        if (SvIOK(value)) {
+            if (sizeof(IV) == sizeof(int64_t)) {
+                return JS_NewInt64(ctx, (int64_t) SvIV(value));
+            }
+
+            return JS_NewInt32(ctx, (int32_t) SvIV(value));
+        }
+
+        if (SvPOK(value)) {
+            STRLEN len;
+            const char* str = SvPVutf8(value, len);
+
+            return JS_NewStringLen(ctx, str, len);
+        }
+    }
+
+    croak("Cannot convert %" SVf " to JavaScript!", value);
+}
 
 /* ---------------------------------------------------------------------- */
 
@@ -150,6 +248,14 @@ new (SV* classname_sv)
 
         JSContext *ctx = JS_NewContext(rt);
 
+        ctx_opaque_s* ctxdata;
+        Newxz(ctxdata, 1, ctx_opaque_s);
+        JS_SetContextOpaque(ctx, ctxdata);
+
+    #ifdef MULTIPLICITY
+        ctxdata->aTHX = aTHX;
+    #endif
+
         RETVAL = exs_new_structref(perl_qjs_s, SvPVbyte_nolen(classname_sv));
         perl_qjs_s* pqjs = exs_structref_ptr(RETVAL);
 
@@ -165,6 +271,13 @@ DESTROY (SV* self_sv)
         JSContext *ctx = pqjs->ctx;
         JSRuntime *rt = JS_GetRuntime(ctx);
 
+        ctx_opaque_s* ctxdata = JS_GetContextOpaque(ctx);
+        for (U32 i=0; i<ctxdata->svs_count; i++) {
+            SvREFCNT_dec(ctxdata->svs[i]);
+        }
+
+        Safefree(ctxdata);
+
         JS_FreeContext(ctx);
         JS_FreeRuntime(rt);
 
@@ -174,6 +287,8 @@ std (SV* self_sv)
         os = 1
         helpers = 2
     CODE:
+        RETVAL = SvREFCNT_inc(self_sv);
+
         perl_qjs_s* pqjs = exs_structref_ptr(self_sv);
 
         switch (ix) {
@@ -190,7 +305,30 @@ std (SV* self_sv)
                 assert(0);
         }
 
+    OUTPUT:
+        RETVAL
+
+SV*
+set_global (SV* self_sv, SV* jsname_sv, SV* value_sv)
+    CODE:
         RETVAL = SvREFCNT_inc(self_sv);
+
+        perl_qjs_s* pqjs = exs_structref_ptr(self_sv);
+
+        JSValue jsval = _sv_to_jsvalue(aTHX_ pqjs->ctx, value_sv);
+
+        JSValue jsglobal = JS_GetGlobalObject(pqjs->ctx);
+
+        STRLEN jsnamelen;
+        const char* jsname_str = SvPVutf8(jsname_sv, jsnamelen);
+
+        JSAtom prop = JS_NewAtomLen(pqjs->ctx, jsname_str, jsnamelen);
+
+        /* NB: ctx takes over jsval. */
+        JS_DefinePropertyValue(pqjs->ctx, jsglobal, prop, jsval, 0);
+
+        JS_FreeAtom(pqjs->ctx, prop);
+        JS_FreeValue(pqjs->ctx, jsglobal);
 
     OUTPUT:
         RETVAL
