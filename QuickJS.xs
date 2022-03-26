@@ -161,8 +161,9 @@ static inline void _ctx_add_sv(pTHX_ JSContext* ctx, SV* sv) {
 static JSValue _sv_to_jsvalue(pTHX_ JSContext* ctx, SV* value);
 
 static JSValue __do_perl_callback(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int jsmagic, JSValue *func_data) {
-    ctx_opaque_s* ctxdata = JS_GetContextOpaque(ctx);
+
 #ifdef MULTIPLICITY
+    ctx_opaque_s* ctxdata = JS_GetContextOpaque(ctx);
     pTHX = ctxdata->aTHX;
 #endif
 
@@ -377,6 +378,7 @@ eval (SV* self_sv, SV* js_code_sv)
 
             JS_FreeCString(ctx, str);
             JS_FreeValue(ctx, jserr);
+            RETVAL = NULL;  // silence uninitialized warning
         }
         else {
             err = NULL;

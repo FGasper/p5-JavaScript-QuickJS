@@ -2,6 +2,13 @@ use strict;
 use warnings;
 
 use Config;
+use Cwd;
+
+chdir 'quickjs' or die "chdir(quickjs): $!";
+
+system $Config{'make'}, 'libquickjs.a' and die;
+
+chdir '..' or die "chdir(..): $!";;
 
 use ExtUtils::MakeMaker::CPANfile;
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
