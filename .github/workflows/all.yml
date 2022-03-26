@@ -39,7 +39,7 @@ jobs:
       image: perldocker/perl-tester:${{ matrix.perl-version }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
             submodules: recursive
       - name: perl -V
@@ -57,7 +57,7 @@ jobs:
     runs-on: macOS-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
             submodules: recursive
       - name: Set up Perl
@@ -81,7 +81,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
             submodules: recursive
       - name: Set up Perl
@@ -111,7 +111,7 @@ jobs:
         with:
             platform: x64
             packages: perl_base perl-ExtUtils-MakeMaker make gcc-g++ libcrypt-devel libnsl-devel bash
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
             submodules: recursive
       - run: perl -V
@@ -145,4 +145,4 @@ jobs:
       - name: Get the qemu container
         run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
       - name: Run tests on ${{ matrix.platform }}
-        run: docker run --rm --interactive ${{ matrix.platform }}/ubuntu bash -c "export DEBIAN_FRONTEND=noninteractive; apt update && apt install -y curl perl make git gcc 'g++' && echo Cloning $GITHUB_SERVER_URL/$GITHUB_REPOSITORY && git clone --recurse-submodules $GITHUB_SERVER_URL/$GITHUB_REPOSITORY && cd $( echo $GITHUB_REPOSITORY | cut -d/ -f2 ) && echo 'Checking out' $GITHUB_SHA && git checkout $GITHUB_SHA && curl -L https://cpanmin.us | perl - --notest --installdeps --with-configure . && perl Makefile.PL && make && prove -wlvmb t"
+        run: docker run --rm --interactive ${{ matrix.platform }}/ubuntu bash -c "export DEBIAN_FRONTEND=noninteractive; apt update && apt install -y curl perl make git gcc 'g++' && echo Cloning $GITHUB_SERVER_URL/$GITHUB_REPOSITORY && git clone --recurse-submodules $GITHUB_SERVER_URL/$GITHUB_REPOSITORY && cd $( echo $GITHUB_REPOSITORY | cut -d/ -f2 ) && echo 'Checking out' $GITHUB_SHA && git checkout $GITHUB_SHA && git submodule init && curl -L https://cpanmin.us | perl - --notest --installdeps --with-configure . && perl Makefile.PL && make && prove -wlvmb t"
