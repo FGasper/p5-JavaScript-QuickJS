@@ -132,13 +132,13 @@ jobs:
         os:
           - name: freebsd
             version: '13.0'
-            pkginstall: pkg install -y gmake curl p5-ExtUtils-MakeMaker
+            pkginstall: pkg install -y gcc gmake curl p5-ExtUtils-MakeMaker
           - name: freebsd
             version: '12.2'
-            pkginstall: pkg install -y gmake curl p5-ExtUtils-MakeMaker
+            pkginstall: pkg install -y gcc gmake curl p5-ExtUtils-MakeMaker
           - name: openbsd
             version: '6.9'
-            pkginstall: pkg_add gmake curl p5-ExtUtils-MakeMaker
+            pkginstall: pkg_add gcc gmake curl p5-ExtUtils-MakeMaker
 
     steps:
       - uses: actions/checkout@v3
