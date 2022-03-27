@@ -164,7 +164,41 @@ static inline void _ctx_add_sv(pTHX_ JSContext* ctx, SV* sv) {
     ctxdata->svs[ctxdata->svs_count - 1] = SvREFCNT_inc(sv);
 }
 
-static JSValue _sv_to_jsvalue(pTHX_ JSContext* ctx, SV* value);
+static JSValue _sv_to_jsvalue(pTHX_ JSContext* ctx, SV* value, SV** error);
+
+#define _MAX_ERRSV_TO_JS_TRIES 10
+
+/* Kind of like _sv_to_jsvalue(), but we need to handle the case where
+   the error SV’s own conversion to a JSValue fails. In that case, we
+   warn on the 1st error, then propagate the 2nd. Repeat until there are
+   no errors.
+*/
+static JSValue _sv_error_to_jsvalue(pTHX_ JSContext* ctx, SV* error) {
+    SV* error2 = NULL;
+
+    uint32_t tries = 0;
+
+    JSValue to_js;
+
+    while (1) {
+        to_js = _sv_to_jsvalue(aTHX_ ctx, error, &error2);
+
+        if (!error2) break;
+
+        warn_sv(error);
+
+        tries++;
+        if (tries > _MAX_ERRSV_TO_JS_TRIES) {
+            warn_sv(error2);
+            return JS_NewString(ctx, "Failed to convert Perl error to JavaScript after " STRINGIFY(_MAX_ERRSV_TO_JS_TRIES) " tries!");
+        }
+
+        error = error2;
+        error2 = NULL;
+    }
+
+    return to_js;
+}
 
 static JSValue __do_perl_callback(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int jsmagic, JSValue *func_data) {
 
@@ -179,18 +213,27 @@ static JSValue __do_perl_callback(JSContext *ctx, JSValueConst this_val, int arg
     SV* args[argc + 1];
     args[argc] = NULL;
 
+    SV* error_sv = NULL;
+
     // TODO: Avoid exceptions here:
     for (int a=0; a<argc; a++) {
         args[a] = _JSValue_to_SV(aTHX_ ctx, argv[a]);
     }
 
-    // TODO: Trap exceptions
-    SV* retval = exs_call_sv_scalar(cb_sv, args);
+    SV* from_perl = exs_call_sv_scalar_trapped(cb_sv, args, &error_sv);
 
-    return _sv_to_jsvalue(aTHX_ ctx, retval);
+    if (from_perl) {
+        JSValue to_js = _sv_to_jsvalue(aTHX_ ctx, from_perl, &error_sv);
+
+        if (!error_sv) return to_js;
+    }
+
+    JSValue jserr = _sv_error_to_jsvalue(aTHX_ ctx, error_sv);
+
+    return JS_Throw(ctx, jserr);
 }
 
-static JSValue _sv_to_jsvalue(pTHX_ JSContext* ctx, SV* value) {
+static JSValue _sv_to_jsvalue(pTHX_ JSContext* ctx, SV* value, SV** error_svp) {
     if (!SvOK(value)) {
         return JS_NULL;
     }
@@ -218,7 +261,15 @@ static JSValue _sv_to_jsvalue(pTHX_ JSContext* ctx, SV* value) {
                     SV** svp = av_fetch(av, i, 0);
                     assert(svp);
                     assert(*svp);
-                    JS_SetPropertyUint32(ctx, jsarray, i, _sv_to_jsvalue(aTHX_ ctx, *svp));
+
+                    JSValue jsval = _sv_to_jsvalue(aTHX_ ctx, *svp, error_svp);
+
+                    if (*error_svp) {
+                        JS_FreeValue(ctx, jsarray);
+                        return _sv_error_to_jsvalue(aTHX_ ctx, *error_svp);
+                    }
+
+                    JS_SetPropertyUint32(ctx, jsarray, i, jsval);
                 }
 
                 return jsarray;
@@ -238,9 +289,13 @@ static JSValue _sv_to_jsvalue(pTHX_ JSContext* ctx, SV* value) {
                     STRLEN keylen;
                     const char* key = SvPVutf8(key_sv, keylen);
 
-                    JSAtom prop = JS_NewAtomLen(ctx, key, keylen);
+                    JSValue jsval = _sv_to_jsvalue(aTHX_ ctx, val_sv, error_svp);
+                    if (*error_svp) {
+                        JS_FreeValue(ctx, jsobj);
+                        return _sv_error_to_jsvalue(aTHX_ ctx, *error_svp);
+                    }
 
-                    JSValue jsval = _sv_to_jsvalue(aTHX_ ctx, val_sv);
+                    JSAtom prop = JS_NewAtomLen(ctx, key, keylen);
 
                     /* NB: ctx takes over jsval. */
                     JS_DefinePropertyValue(ctx, jsobj, prop, jsval, JS_PROP_WRITABLE);
@@ -383,7 +438,11 @@ set_global (SV* self_sv, SV* jsname_sv, SV* value_sv)
 
         perl_qjs_s* pqjs = exs_structref_ptr(self_sv);
 
-        JSValue jsval = _sv_to_jsvalue(aTHX_ pqjs->ctx, value_sv);
+        SV* error = NULL;
+
+        JSValue jsval = _sv_to_jsvalue(aTHX_ pqjs->ctx, value_sv, &error);
+
+        if (error) croak_sv(error);
 
         JSValue jsglobal = JS_GetGlobalObject(pqjs->ctx);
 
