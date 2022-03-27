@@ -8,7 +8,7 @@ use File::Temp;
 open my $rfh, '<', 'quickjs/Makefile' or die "open Makefile: $!";
 my $make = do { local $/; <$rfh> };
 
-$make =~ s<^(CFLAGS\s*=\s*)><$1 -fPIC >g;
+$make =~ s<^(\s*CFLAGS\s*=\s*)><$1 -fPIC >mg;
 
 my ($fh, $path) = File::Temp::tempfile( CLEANUP => 1 );
 syswrite $fh, $make or die "write temp make: $!";
