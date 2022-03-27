@@ -1,5 +1,9 @@
+#!/usr/bin/env perl
+
 use strict;
 use warnings;
+
+use ExtUtils::MakeMaker::CPANfile;
 
 use Config;
 
@@ -16,9 +20,6 @@ close $fh;
 
 system $Config{'make'}, '-C', 'quickjs', '-f', $path, 'libquickjs.a' and die;
 
-use ExtUtils::MakeMaker::CPANfile;
-# See lib/ExtUtils/MakeMaker.pm for details of how to influence
-# the contents of the Makefile that is written.
 WriteMakefile(
     NAME              => 'JavaScript::QuickJS',
     VERSION_FROM      => 'lib/JavaScript/QuickJS.pm', # finds $VERSION
@@ -29,7 +30,7 @@ WriteMakefile(
         ],
       ) : ()
     ),
-    INC               => '-Wall --std=c99 -I. -Iraft/include', # e.g., '-I. -I/usr/include/other'
+    INC               => '-Wall --std=c99 -I.',
     LICENSE           => "perl_5",
 
     # quickjs needs these:

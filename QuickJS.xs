@@ -193,11 +193,15 @@ static JSValue _sv_to_jsvalue(pTHX_ JSContext* ctx, SV* value) {
         switch (SvTYPE(SvRV(value))) {
             case SVt_PVCV:
                 _ctx_add_sv(aTHX_ ctx, value);
+
+                /* A hack to store our callback via the func_data pointer: */
+                JSValue dummy = JS_MKPTR(JS_TAG_INT, value);
+
                 return JS_NewCFunctionData(
                     ctx,
                     __do_perl_callback,
                     0, 0,
-                    1, &(JS_MKPTR(JS_TAG_INT, value))
+                    1, &dummy
                 );
 
             default:
