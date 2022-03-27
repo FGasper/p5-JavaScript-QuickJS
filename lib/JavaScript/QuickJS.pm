@@ -54,15 +54,15 @@ This module converts returned values from JavaScript thus:
 
 =head1 PLATFORM NOTES
 
-=over
+QuickJS only seems to envision running on a fairly limited set of OSes.
+As a result …
 
-=item * QuickJS doesn’t appear to compile on Windows, so neither can this
-module.
+Linux & macOS are the only known platforms that work “out-of-the-box”.
 
-=item * Cygwin can work, but you need to replace F<quickjs.c>’s
-calls to C<malloc_usable_size()> with 0.
+Cygwin and FreeBSD I<can> work with some small tweaks to quickjs; see the
+compiler errors and F<quickjs.c> for more.
 
-=back
+Other POSIX platforms I<may> work.
 
 =cut
 
