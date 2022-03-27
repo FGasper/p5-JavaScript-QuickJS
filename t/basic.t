@@ -45,6 +45,11 @@ like($err, qr<TypeError>, 'error type is given');
 like($err, qr<bar>, 'error detail (key) is given');
 like($err, qr<undefined>, 'error detail (bad value) is given');
 
+ok(
+    $js->eval("'Promise' in this"),
+    'Promise object exists',
+);
+
 done_testing;
 
 1;

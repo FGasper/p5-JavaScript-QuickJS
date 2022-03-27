@@ -19,29 +19,39 @@ engine into Perl. You can thus run JavaScript directly in your Perl programs.
 This distribution includes QuickJS and builds it as part of building this
 module.
 
-# TYPE CONVERSION
+# TYPE CONVERSION: JAVASCRIPT → PERL
 
 This module converts returned values from JavaScript thus:
 
-- JS strings become _character_ strings in Perl.
-- JS numbers & booleans become corresponding Perl values.
+- JS string primitives become _character_ strings in Perl.
+- JS number & boolean primitives become corresponding Perl values.
 - JS null & undefined become Perl undef.
 - JS objects …
     - Arrays become Perl array references.
     - Functions trigger an exception. (TODO: Make those a Perl coderef.)
-    - Other JS objects become Perl hashes.
+    - Other JS objects become Perl hash references.
+
+# TYPE CONVERSION: PERL → JAVASCRIPT
+
+Generally speaking, it’s the inverse of JS → Perl, though of course
+since Perl doesn’t differentiate “numeric strings” from “numbers” there’s
+occasional ambiguity. In such cases, behavior is undefined; be sure to
+typecast in JavaScript accordingly!
+
+- Perl strings, numbers, & booleans become corresponding JavaScript
+primitives.
+- Perl undef becomes JS null.
+- Array & hash references become JavaScript arrays and “plain” objects.
+- Perl code references become JavaScript functions.
 
 # PLATFORM NOTES
 
-QuickJS only seems to envision running on a fairly limited set of OSes.
-As a result …
+Due to QuickJS limitations, Linux & macOS are the only platforms known
+to work “out-of-the-box”. Other POSIX OSes _should_ work with some small
+tweaks to quickjs; see the compiler errors and `quickjs.c` for more
+details.
 
-Linux & macOS are the only known platforms that work “out-of-the-box”.
-
-Cygwin and FreeBSD _can_ work with some small tweaks to quickjs; see the
-compiler errors and `quickjs.c` for more.
-
-Other POSIX platforms _may_ work.
+Pull requests to improve portability are welcome!
 
 # METHODS
 
@@ -73,3 +83,9 @@ Untrapped exception in JavaScript will be rethrown as Perl exceptions.
 
 Runs $JS\_CODE as a module, which enables ES6 module syntax.
 Note that no values can be returned directly in this mode of execution.
+
+# LICENSE & COPYRIGHT
+
+Copyright 2019-2021 Gasper Software Consulting.
+
+This library is licensed under the same terms as Perl itself.
