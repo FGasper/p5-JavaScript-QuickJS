@@ -20,6 +20,14 @@ close $fh;
 
 system $Config{'make'}, '-C', 'quickjs', '-f', $path, 'libquickjs.a' and die;
 
+# quickjs needs these; pre-5.20 perls didn’t include libpthread:
+my @libs = qw(-lm -ldl -lpthread);
+
+# RaspiOS needs this:
+if (_has_libatomic()) {
+    push @libs, '-latomic';
+}
+
 WriteMakefile(
     NAME              => 'JavaScript::QuickJS',
     VERSION_FROM      => 'lib/JavaScript/QuickJS.pm', # finds $VERSION
@@ -33,8 +41,7 @@ WriteMakefile(
     INC               => '-Wall --std=c99 -I.',
     LICENSE           => "perl_5",
 
-    # quickjs needs these:
-    LIBS => '-lm -ldl -lpthread',
+    LIBS => "@libs",
 
     OBJECT => [
         '$(BASEEXT)$(OBJ_EXT)',
@@ -55,3 +62,20 @@ WriteMakefile(
         },
     },
 );
+
+sub _has_libatomic {
+    my $dir = File::Temp::tempdir( CLEANUP => 1 );
+    open my $fh, '>', "$dir/test.c";
+    syswrite $fh, join(
+        "\n",
+        'int main() { return 0; }',
+    );
+
+    print "Checking whether this system uses libatomic …\n";
+
+    my $ok = !system $Config{'cc'}, "$dir/test.c", '-latomic';
+
+    print "\t" . ($ok ? 'Looks like it.' : 'Guess not.') . "\n";
+
+    return $ok;
+}
