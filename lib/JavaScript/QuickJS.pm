@@ -7,7 +7,7 @@ use warnings;
 
 =head1 NAME
 
-JavaScript::QuickJS
+JavaScript::QuickJS - Run JavaScript via L<QuickJS|https://bellard.org/quickjs> in Perl
 
 =head1 SYNOPSIS
 
@@ -20,7 +20,7 @@ Quick and dirty …
 
 =head1 DESCRIPTION
 
-This library embeds Fabrice Bellard’s L<QuickJS|https://bellard.org/quickjs>
+This library embeds Fabrice Bellard’s QuickJS
 engine into Perl. You can thus run JavaScript directly in your Perl programs.
 
 This distribution includes QuickJS and builds it as part of building this

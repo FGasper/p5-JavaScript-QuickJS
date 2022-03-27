@@ -32,6 +32,9 @@ WriteMakefile(
     INC               => '-Wall --std=c99 -I. -Iraft/include', # e.g., '-I. -I/usr/include/other'
     LICENSE           => "perl_5",
 
+    # quickjs needs these:
+    LIBS => '-lm -ldl -lpthread',
+
     OBJECT => [
         '$(BASEEXT)$(OBJ_EXT)',
         'quickjs/libquickjs.a',
