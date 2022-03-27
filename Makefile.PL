@@ -8,6 +8,7 @@ use ExtUtils::MakeMaker::CPANfile;
 use Config;
 
 use File::Temp;
+use File::Which;
 
 open my $rfh, '<', 'quickjs/Makefile' or die "open Makefile: $!";
 my $make = do { local $/; <$rfh> };
@@ -18,7 +19,9 @@ my ($fh, $path) = File::Temp::tempfile( CLEANUP => 1 );
 syswrite $fh, $make or die "write temp make: $!";
 close $fh;
 
-system 'gmake', '-C', 'quickjs', '-f', $path, 'libquickjs.a' and die;
+my $make_bin = File::Which::which('gmake') || $Config{'make'};
+
+system $make_bin, '-C', 'quickjs', '-f', $path, 'libquickjs.a' and die;
 
 # quickjs needs these; pre-5.20 perls didn’t include libpthread:
 my @libs = qw(-lm -ldl -lpthread);
