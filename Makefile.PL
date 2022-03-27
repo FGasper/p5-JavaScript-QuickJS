@@ -2,13 +2,19 @@ use strict;
 use warnings;
 
 use Config;
-use Cwd;
 
-chdir 'quickjs' or die "chdir(quickjs): $!";
+use File::Temp;
 
-system $Config{'make'} and die;
+open my $rfh, '<', 'quickjs/Makefile' or die "open Makefile: $!";
+my $make = do { local $/; <$rfh> };
 
-chdir '..' or die "chdir(..): $!";;
+$make =~ s<^(CFLAGS\s*=\s*)><$1 -fPIC >g;
+
+my ($fh, $path) = File::Temp::tempfile( CLEANUP => 1 );
+syswrite $fh, $make or die "write temp make: $!";
+close $fh;
+
+system $Config{'make'}, '-C', 'quickjs', '-f', $path, 'libquickjs.a' and die;
 
 use ExtUtils::MakeMaker::CPANfile;
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
