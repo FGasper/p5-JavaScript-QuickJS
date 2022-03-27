@@ -145,7 +145,7 @@ jobs:
       - name: Get the qemu container
         run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
       - name: Run tests on ${{ matrix.platform }}
-        run: docker run --rm --interactive ${{ matrix.platform }}/ubuntu bash -c "export DEBIAN_FRONTEND=noninteractive; apt update && apt install -y curl perl make git gcc 'g++' && echo Cloning $GITHUB_SERVER_URL/$GITHUB_REPOSITORY && git clone --recurse-submodules $GITHUB_SERVER_URL/$GITHUB_REPOSITORY && cd $( echo $GITHUB_REPOSITORY | cut -d/ -f2 ) && echo 'Checking out' $GITHUB_SHA && git checkout $GITHUB_SHA && git submodule init && curl -L https://cpanmin.us | perl - --notest --installdeps --with-configure . && perl Makefile.PL && make && prove -wlvmb t"
+        run: docker run --rm --interactive ${{ matrix.platform }}/ubuntu bash -c "export DEBIAN_FRONTEND=noninteractive; apt update && apt install -y curl perl make git gcc 'g++' && echo Cloning $GITHUB_SERVER_URL/$GITHUB_REPOSITORY && git clone --recurse-submodules $GITHUB_SERVER_URL/$GITHUB_REPOSITORY && cd $( echo $GITHUB_REPOSITORY | cut -d/ -f2 ) && echo 'Checking out' $GITHUB_SHA && git checkout $GITHUB_SHA && git submodule init && git submodule update && curl -L https://cpanmin.us | perl - --notest --installdeps --with-configure . && perl Makefile.PL && make && prove -wlvmb t"
 
   BSDs:
     runs-on: macos-10.15
@@ -176,7 +176,7 @@ jobs:
           version: ${{ matrix.os.version }}
           shell: bash
           run: |
-            sudo ${{ matrix.os.pkginstall }}
+            false && sudo ${{ matrix.os.pkginstall }}
             curl -L https://cpanmin.us | sudo perl - --notest --installdeps --with-configure --with-develop .
             perl Makefile.PL
             make
