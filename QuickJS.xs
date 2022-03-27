@@ -84,7 +84,9 @@ static inline SV* _JSValue_array_to_SV (pTHX_ JSContext* ctx, JSValue jsval) {
 static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval) {
     SV* RETVAL;
 
-    switch (JS_VALUE_GET_TAG(jsval)) {
+    int tag = JS_VALUE_GET_NORM_TAG(jsval);
+
+    switch (tag) {
         case JS_TAG_EXCEPTION:
             croak("DEV ERROR: Exception must be unwrapped!");
 
@@ -129,13 +131,13 @@ static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval) {
 
         default:
             STMT_START {
-                const char* typename = _jstype_name(JS_VALUE_GET_TAG(jsval));
+                const char* typename = _jstype_name(tag);
 
                 if (typename) {
-                    croak("Cannot convert JS %s (QuickJS tag %d) to Perl!", typename, JS_VALUE_GET_TAG(jsval));
+                    croak("Cannot convert JS %s (QuickJS tag %d) to Perl!", typename, tag);
                 }
                 else {
-                    croak("Cannot convert (unexpected) JS tag value %d to Perl!", JS_VALUE_GET_TAG(jsval));
+                    croak("Cannot convert (unexpected) JS tag value %d to Perl!", tag);
                 }
             } STMT_END;
     }
