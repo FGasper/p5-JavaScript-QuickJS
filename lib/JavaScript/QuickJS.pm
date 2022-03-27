@@ -52,6 +52,18 @@ This module converts returned values from JavaScript thus:
 
 =back
 
+=head1 PLATFORM NOTES
+
+=over
+
+=item * QuickJS doesn’t appear to compile on Windows, so neither can this
+module.
+
+=item * Cygwin can work, but you need to replace F<quickjs.c>’s
+calls to C<malloc_usable_size()> with 0.
+
+=back
+
 =cut
 
 # ----------------------------------------------------------------------

@@ -18,7 +18,7 @@ my ($fh, $path) = File::Temp::tempfile( CLEANUP => 1 );
 syswrite $fh, $make or die "write temp make: $!";
 close $fh;
 
-system $Config{'make'}, '-C', 'quickjs', '-f', $path, 'libquickjs.a' and die;
+system 'gmake', '-C', 'quickjs', '-f', $path, 'libquickjs.a' and die;
 
 # quickjs needs these; pre-5.20 perls didn’t include libpthread:
 my @libs = qw(-lm -ldl -lpthread);
