@@ -5,6 +5,7 @@
 
 typedef struct {
     JSContext *ctx;
+    pid_t pid;
 } perl_qjs_s;
 
 typedef struct {
@@ -70,11 +71,14 @@ static inline SV* _JSValue_array_to_SV (pTHX_ JSContext* ctx, JSValue jsval) {
     JS_FreeValue(ctx, jslen);
 
     AV* av = newAV();
-    av_fill( av, len - 1 );
-    for (uint32_t i=0; i<len; i++) {
-        JSValue jsitem = JS_GetPropertyUint32(ctx, jsval, i);
-        av_store( av, i, _JSValue_to_SV(aTHX_ ctx, jsitem) );
-        JS_FreeValue(ctx, jsitem);
+
+    if (len) {
+        av_fill( av, len - 1 );
+        for (uint32_t i=0; i<len; i++) {
+            JSValue jsitem = JS_GetPropertyUint32(ctx, jsval, i);
+            av_store( av, i, _JSValue_to_SV(aTHX_ ctx, jsitem) );
+            JS_FreeValue(ctx, jsitem);
+        }
     }
 
     return newRV_noinc((SV*) av);
@@ -206,6 +210,47 @@ static JSValue _sv_to_jsvalue(pTHX_ JSContext* ctx, SV* value) {
                     1, &dummy
                 );
 
+            case SVt_PVAV: STMT_START {
+                AV* av = (AV*) SvRV(value);
+                JSValue jsarray = JS_NewArray(ctx);
+                JS_SetPropertyStr(ctx, jsarray, "length", JS_NewUint32(ctx, 1 + av_len(av)));
+                for (int32_t i=0; i <= av_len(av); i++) {
+                    SV** svp = av_fetch(av, i, 0);
+                    assert(svp);
+                    assert(*svp);
+                    JS_SetPropertyUint32(ctx, jsarray, i, _sv_to_jsvalue(aTHX_ ctx, *svp));
+                }
+
+                return jsarray;
+            } STMT_END;
+
+            case SVt_PVHV: STMT_START {
+                HV* hv = (HV*) SvRV(value);
+                JSValue jsobj = JS_NewObject(ctx);
+
+                hv_iterinit(hv);
+
+                HE* hvent;
+                while ( (hvent = hv_iternext(hv)) ) {
+                    SV* key_sv = hv_iterkeysv(hvent);
+                    SV* val_sv = hv_iterval(hv, hvent);
+
+                    STRLEN keylen;
+                    const char* key = SvPVutf8(key_sv, keylen);
+
+                    JSAtom prop = JS_NewAtomLen(ctx, key, keylen);
+
+                    JSValue jsval = _sv_to_jsvalue(aTHX_ ctx, val_sv);
+
+                    /* NB: ctx takes over jsval. */
+                    JS_DefinePropertyValue(ctx, jsobj, prop, jsval, JS_PROP_WRITABLE);
+
+                    JS_FreeAtom(ctx, prop);
+                }
+
+                return jsobj;
+            } STMT_END;
+
             default:
                 /* We’ll croak below. */
                 break;
@@ -274,7 +319,10 @@ new (SV* classname_sv)
         RETVAL = exs_new_structref(perl_qjs_s, SvPVbyte_nolen(classname_sv));
         perl_qjs_s* pqjs = exs_structref_ptr(RETVAL);
 
-        pqjs->ctx = ctx;
+        *pqjs = (perl_qjs_s) {
+            .ctx = ctx,
+            .pid = getpid(),
+        };
 
     OUTPUT:
         RETVAL
@@ -283,6 +331,11 @@ void
 DESTROY (SV* self_sv)
     CODE:
         perl_qjs_s* pqjs = exs_structref_ptr(self_sv);
+
+        if (PL_dirty && pqjs->pid == getpid()) {
+            warn("DESTROYing %" SVf " at global destruction; memory leak likely!\n", self_sv);
+        }
+
         JSContext *ctx = pqjs->ctx;
         JSRuntime *rt = JS_GetRuntime(ctx);
 
@@ -340,7 +393,7 @@ set_global (SV* self_sv, SV* jsname_sv, SV* value_sv)
         JSAtom prop = JS_NewAtomLen(pqjs->ctx, jsname_str, jsnamelen);
 
         /* NB: ctx takes over jsval. */
-        JS_DefinePropertyValue(pqjs->ctx, jsglobal, prop, jsval, 0);
+        JS_DefinePropertyValue(pqjs->ctx, jsglobal, prop, jsval, JS_PROP_WRITABLE);
 
         JS_FreeAtom(pqjs->ctx, prop);
         JS_FreeValue(pqjs->ctx, jsglobal);
