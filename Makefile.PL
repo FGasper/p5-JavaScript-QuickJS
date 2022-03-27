@@ -75,7 +75,7 @@ sub _has_libatomic {
 
     my $ok = !system $Config{'cc'}, "$dir/test.c", '-latomic';
 
-    print "\t" . ($ok ? 'Looks like it.' : 'Guess not.') . "\n";
+    print "\t… " . ($ok ? 'Looks like it.' : 'Guess not.') . "\n";
 
     return $ok;
 }
