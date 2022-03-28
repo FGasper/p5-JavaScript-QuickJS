@@ -29,14 +29,15 @@ This module converts returned values from JavaScript thus:
 - JS objects …
     - Arrays become Perl array references.
     - “Plain” objects become Perl hash references.
+    - Functions become Perl code references.
     - Behaviour is **UNDEFINED** for other object types.
 
 # TYPE CONVERSION: PERL → JAVASCRIPT
 
-Generally speaking, it’s the inverse of JS → Perl, though of course
-since Perl doesn’t differentiate “numeric strings” from “numbers” there’s
-occasional ambiguity. In such cases, behavior is undefined; be sure to
-typecast in JavaScript accordingly!
+Generally speaking, it’s the inverse of JS → Perl, though since Perl doesn’t
+differentiate “numeric strings” from “numbers” there’s occasional ambiguity.
+In such cases, behavior is undefined; be sure to typecast in JavaScript
+accordingly.
 
 - Perl strings, numbers, & booleans become corresponding JavaScript
 primitives.

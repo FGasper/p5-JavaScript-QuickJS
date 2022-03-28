@@ -46,6 +46,8 @@ This module converts returned values from JavaScript thus:
 
 =item * “Plain” objects become Perl hash references.
 
+=item * Functions become Perl code references.
+
 =item * Behaviour is B<UNDEFINED> for other object types.
 
 =back
@@ -54,10 +56,10 @@ This module converts returned values from JavaScript thus:
 
 =head1 TYPE CONVERSION: PERL → JAVASCRIPT
 
-Generally speaking, it’s the inverse of JS → Perl, though of course
-since Perl doesn’t differentiate “numeric strings” from “numbers” there’s
-occasional ambiguity. In such cases, behavior is undefined; be sure to
-typecast in JavaScript accordingly!
+Generally speaking, it’s the inverse of JS → Perl, though since Perl doesn’t
+differentiate “numeric strings” from “numbers” there’s occasional ambiguity.
+In such cases, behavior is undefined; be sure to typecast in JavaScript
+accordingly.
 
 =over
 

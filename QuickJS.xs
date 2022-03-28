@@ -11,6 +11,9 @@ typedef struct {
 } perl_qjs_s;
 
 typedef struct {
+#ifdef MULTIPLICITY
+    pTHX;
+#endif
     JSContext *ctx;
     JSValue jsfunc;
     pid_t pid;
@@ -22,6 +25,7 @@ typedef struct {
 #endif
     SV** svs;
     U32 svs_count;
+    U32 refcount;
 } ctx_opaque_s;
 
 const char* __jstype_name_back[] = {
@@ -153,14 +157,30 @@ static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp) {
 
         case JS_TAG_OBJECT:
             if (JS_IsFunction(ctx, jsval)) {
-                RETVAL = exs_new_structref(perl_qjs_func_s, PERL_NS_ROOT "::Function");
-                perl_qjs_func_s* pqjs = exs_structref_ptr(RETVAL);
+                SV* func_sv = exs_new_structref(perl_qjs_func_s, PERL_NS_ROOT "::Function");
+                perl_qjs_func_s* pqjs = exs_structref_ptr(func_sv);
 
                 *pqjs = (perl_qjs_func_s) {
+    #ifdef MULTIPLICITY
+                    .aTHX = aTHX,
+    #endif
                     .ctx = ctx,
                     .jsfunc = jsval,
                     .pid = getpid(),
                 };
+
+                ctx_opaque_s* ctxdata = JS_GetContextOpaque(ctx);
+                ctxdata->refcount++;
+
+                CV* perlfunc = get_cv(PERL_NS_ROOT "::_wrap_jsfunc", 0);
+                assert(perlfunc);
+
+                SV* perlargs[] = {
+                    func_sv,
+                    NULL,
+                };
+
+                RETVAL = exs_call_sv_scalar((SV*) perlfunc, perlargs);
             }
             else if (JS_IsArray(ctx, jsval)) {
                 RETVAL = _JSValue_array_to_SV(aTHX_ ctx, jsval, err_svp);
@@ -408,9 +428,12 @@ JSContext* _create_new_jsctx( pTHX_ JSRuntime *rt ) {
     Newxz(ctxdata, 1, ctx_opaque_s);
     JS_SetContextOpaque(ctx, ctxdata);
 
+    *ctxdata = (ctx_opaque_s) {
+        .refcount = 1,
 #ifdef MULTIPLICITY
-    ctxdata->aTHX = aTHX;
+        .aTHX = aTHX,
 #endif
+    };
 
     return ctx;
 }
@@ -453,6 +476,23 @@ static inline SV* _return_jsvalue_or_croak(pTHX_ JSContext* ctx, JSValue jsret) 
     return RETVAL;
 }
 
+static void _free_jsctx(pTHX_ JSContext* ctx) {
+    ctx_opaque_s* ctxdata = JS_GetContextOpaque(ctx);
+
+    if (--ctxdata->refcount == 0) {
+        JSRuntime *rt = JS_GetRuntime(ctx);
+
+        for (U32 i=0; i<ctxdata->svs_count; i++) {
+            SvREFCNT_dec(ctxdata->svs[i]);
+        }
+
+        Safefree(ctxdata);
+
+        JS_FreeContext(ctx);
+        JS_FreeRuntime(rt);
+    }
+}
+
 /* ---------------------------------------------------------------------- */
 
 MODULE = JavaScript::QuickJS        PACKAGE = JavaScript::QuickJS
@@ -488,18 +528,8 @@ DESTROY (SV* self_sv)
             warn("DESTROYing %" SVf " at global destruction; memory leak likely!\n", self_sv);
         }
 
-        JSContext *ctx = pqjs->ctx;
-        JSRuntime *rt = JS_GetRuntime(ctx);
 
-        ctx_opaque_s* ctxdata = JS_GetContextOpaque(ctx);
-        for (U32 i=0; i<ctxdata->svs_count; i++) {
-            SvREFCNT_dec(ctxdata->svs[i]);
-        }
-
-        Safefree(ctxdata);
-
-        JS_FreeContext(ctx);
-        JS_FreeRuntime(rt);
+        _free_jsctx(aTHX_ pqjs->ctx);
 
 SV*
 std (SV* self_sv)
@@ -576,9 +606,22 @@ eval (SV* self_sv, SV* js_code_sv)
     OUTPUT:
         RETVAL
 
-/* ---------------------------------------------------------------------- */
+# ----------------------------------------------------------------------
 
 MODULE = JavaScript::QuickJS        PACKAGE = JavaScript::QuickJS::Function
+
+void
+DESTROY( SV* self_sv )
+    CODE:
+        perl_qjs_func_s* pqjs = exs_structref_ptr(self_sv);
+    #ifdef MULTIPLICITY
+        pTHX = pqjs->aTHX;
+    #endif
+
+        /* Functions don’t appear to need to be freed … ? */
+
+        _free_jsctx(aTHX_ pqjs->ctx);
+
 
 SV*
 call( SV* self_sv, ... )
@@ -594,11 +637,11 @@ call( SV* self_sv, ... )
         for (uint32_t i=0; i<params_count; i++) {
             SV* cur_sv = ST(i+1);
 
-            JSValue jsval = _sv_to_jsvalue(aTHX_ pqjs->ctx, value_sv, &error);
+            JSValue jsval = _sv_to_jsvalue(aTHX_ pqjs->ctx, cur_sv, &error);
 
             if (error) {
                 while (--i >= 0) {
-                    JS_FreeValue(jsvars[i]);
+                    JS_FreeValue(pqjs->ctx, jsvars[i]);
                 }
 
                 croak_sv(error);
@@ -613,9 +656,3 @@ call( SV* self_sv, ... )
 
     OUTPUT:
         RETVAL
-
-void
-DESTROY( SV* self_sv )
-    CODE:
-        perl_qjs_func_s* pqjs = exs_structref_ptr(self_sv);
-        JS_FreeValue(pqjs->jsfunc);
