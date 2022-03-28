@@ -3,10 +3,18 @@
 #include "quickjs/quickjs.h"
 #include "quickjs/quickjs-libc.h"
 
+#define PERL_NS_ROOT "JavaScript::QuickJS"
+
 typedef struct {
     JSContext *ctx;
     pid_t pid;
 } perl_qjs_s;
+
+typedef struct {
+    JSContext *ctx;
+    JSValue jsfunc;
+    pid_t pid;
+} perl_qjs_func_s;
 
 typedef struct {
 #ifdef MULTIPLICITY
@@ -145,8 +153,14 @@ static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp) {
 
         case JS_TAG_OBJECT:
             if (JS_IsFunction(ctx, jsval)) {
-                *err_svp = newSVpvs("Cannot convert JS function to Perl!");
-                return NULL;
+                RETVAL = exs_new_structref(perl_qjs_func_s, PERL_NS_ROOT "::Function");
+                perl_qjs_func_s* pqjs = exs_structref_ptr(RETVAL);
+
+                *pqjs = (perl_qjs_func_s) {
+                    .ctx = ctx,
+                    .jsfunc = jsval,
+                    .pid = getpid(),
+                };
             }
             else if (JS_IsArray(ctx, jsval)) {
                 RETVAL = _JSValue_array_to_SV(aTHX_ ctx, jsval, err_svp);
@@ -395,6 +409,44 @@ JSContext* _create_new_jsctx( pTHX_ JSRuntime *rt ) {
     return ctx;
 }
 
+static inline SV* _return_jsvalue_or_croak(pTHX_ JSContext* ctx, JSValue jsret) {
+    SV* err;
+    SV* RETVAL;
+
+    if (JS_IsException(jsret)) {
+        JSValue jserr = JS_GetException(ctx);
+        //err = _JSValue_to_SV(aTHX_ ctx, jserr);
+
+        /* Ideal here is to capture all aspects of the error object,
+            including its `name` and members. But for now just give
+            a string.
+
+            JSValue jslen = JS_GetPropertyStr(ctx, jserr, "name");
+            STRLEN namelen;
+            const char* namestr = JS_ToCStringLen(ctx, &namelen, jslen);
+        */
+
+        STRLEN strlen;
+        const char* str = JS_ToCStringLen(ctx, &strlen, jserr);
+
+        err = newSVpvn_flags(str, strlen, SVf_UTF8);
+
+        JS_FreeCString(ctx, str);
+        JS_FreeValue(ctx, jserr);
+        RETVAL = NULL;  // silence uninitialized warning
+    }
+    else {
+        err = NULL;
+        RETVAL = _JSValue_to_SV(aTHX_ ctx, jsret, &err);
+    }
+
+    JS_FreeValue(ctx, jsret);
+
+    if (err) croak_sv(err);
+
+    return RETVAL;
+}
+
 /* ---------------------------------------------------------------------- */
 
 MODULE = JavaScript::QuickJS        PACKAGE = JavaScript::QuickJS
@@ -513,38 +565,51 @@ eval (SV* self_sv, SV* js_code_sv)
         int eval_flags = ix ? JS_EVAL_TYPE_MODULE : JS_EVAL_TYPE_GLOBAL;
         JSValue jsret = JS_Eval(ctx, js_code, js_code_len, "", eval_flags);
 
-        SV* err;
-
-        if (JS_IsException(jsret)) {
-            JSValue jserr = JS_GetException(ctx);
-            //err = _JSValue_to_SV(aTHX_ ctx, jserr);
-
-            /* Ideal here is to capture all aspects of the error object,
-               including its `name` and members. But for now just give
-               a string.
-
-                JSValue jslen = JS_GetPropertyStr(ctx, jserr, "name");
-                STRLEN namelen;
-                const char* namestr = JS_ToCStringLen(ctx, &namelen, jslen);
-            */
-
-            STRLEN strlen;
-            const char* str = JS_ToCStringLen(ctx, &strlen, jserr);
-
-            err = newSVpvn_flags(str, strlen, SVf_UTF8);
-
-            JS_FreeCString(ctx, str);
-            JS_FreeValue(ctx, jserr);
-            RETVAL = NULL;  // silence uninitialized warning
-        }
-        else {
-            err = NULL;
-            RETVAL = _JSValue_to_SV(aTHX_ ctx, jsret, &err);
-        }
-
-        JS_FreeValue(ctx, jsret);
-
-        if (err) croak_sv(err);
+        RETVAL = _return_jsvalue_or_croak(aTHX_ ctx, jsret);
 
     OUTPUT:
         RETVAL
+
+/* ---------------------------------------------------------------------- */
+
+MODULE = JavaScript::QuickJS        PACKAGE = JavaScript::QuickJS::Function
+
+SV*
+call( SV* self_sv, ... )
+    CODE:
+        perl_qjs_func_s* pqjs = exs_structref_ptr(self_sv);
+
+        U32 params_count = items - 1;
+
+        JSValue jsvars[params_count];
+
+        SV* error = NULL;
+
+        for (uint32_t i=0; i<params_count; i++) {
+            SV* cur_sv = ST(i+1);
+
+            JSValue jsval = _sv_to_jsvalue(aTHX_ pqjs->ctx, value_sv, &error);
+
+            if (error) {
+                while (--i >= 0) {
+                    JS_FreeValue(jsvars[i]);
+                }
+
+                croak_sv(error);
+            }
+
+            jsvars[i] = jsval;
+        }
+
+        JSValue jsret = JS_Call(pqjs->ctx, pqjs->jsfunc, JS_NULL, params_count, jsvars);
+
+        RETVAL = _return_jsvalue_or_croak(aTHX_ pqjs->ctx, jsret);
+
+    OUTPUT:
+        RETVAL
+
+void
+DESTROY( SV* self_sv )
+    CODE:
+        perl_qjs_func_s* pqjs = exs_structref_ptr(self_sv);
+        JS_FreeValue(pqjs->jsfunc);

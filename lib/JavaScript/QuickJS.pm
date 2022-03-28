@@ -132,4 +132,11 @@ This library is licensed under the same terms as Perl itself.
 
 =cut
 
+#----------------------------------------------------------------------
+
+sub _wrap_jsfunc {
+    my $jsfunc_obj = $_[0];
+    return sub { $jsfunc_obj->call(@_) };
+}
+
 1;
