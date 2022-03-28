@@ -106,7 +106,7 @@ sub postamble {
 
 .PHONY:
 build-quickjs:
-\x09\$(MAKE) -C quickjs -f '$PERL_QJS_MAKEFILE_PATH' libquickjs.a
+\t\$(MAKE) -C quickjs -f '$PERL_QJS_MAKEFILE_PATH' libquickjs.a
 MAKE_FRAG
 }
 
