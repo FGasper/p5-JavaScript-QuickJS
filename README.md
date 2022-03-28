@@ -95,7 +95,7 @@ Pull requests to improve portability are welcome!
 
 # SEE ALSO
 
-This isn’t CPAN’s first JavaScript module by a long shot:
+Other JavaScript modules on CPAN include:
 
 - [JavaScript::Duktape::XS](https://metacpan.org/pod/JavaScript%3A%3ADuktape%3A%3AXS) and [JavaScript::Duktape](https://metacpan.org/pod/JavaScript%3A%3ADuktape) make the
 [Duktape](https://duktape.org) library available to Perl. They’re similar to
@@ -105,8 +105,8 @@ several JavaScript constructs that QuickJS supports. (It’s also slower.)
 [V8](https://v8.dev) library to Perl. Neither seems to support current
 V8 versions.
 - [JE](https://metacpan.org/pod/JE) is a pure-Perl (!) JavaScript engine.
-- [JavaScript](https://metacpan.org/pod/JavaScript) and [JavaScript::Lite](https://metacpan.org/pod/JavaScript%3A%3ALite) interface with Mozilla’s
-[SpiderMonkey](https://spidermonkey.dev/) engine.
+- [JavaScript](https://metacpan.org/pod/JavaScript) and [JavaScript::Lite](https://metacpan.org/pod/JavaScript%3A%3ALite) expose Mozilla’s
+[SpiderMonkey](https://spidermonkey.dev/) engine to Perl.
 
 # LICENSE & COPYRIGHT
 

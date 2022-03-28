@@ -18,7 +18,7 @@ typedef struct {
 
 typedef struct {
 #ifdef MULTIPLICITY
-    pTHX;
+    tTHX aTHX;
 #endif
     SV** svs;
     U32 svs_count;
@@ -627,6 +627,8 @@ eval (SV* self_sv, SV* js_code_sv)
         RETVAL
 
 # ----------------------------------------------------------------------
+# This package isn’t exposed to Perl code; it just exists to facilitate
+# calling JS functions from Perl. All instances are wrapped in closures.
 
 MODULE = JavaScript::QuickJS        PACKAGE = JavaScript::QuickJS::Function
 

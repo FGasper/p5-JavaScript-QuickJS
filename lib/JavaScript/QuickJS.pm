@@ -75,6 +75,10 @@ Untrapped exceptions in JavaScript will be rethrown as Perl exceptions.
 Runs $JS_CODE as a module, which enables ES6 module syntax.
 Note that no values can be returned directly in this mode of execution.
 
+=cut
+
+# ----------------------------------------------------------------------
+
 =head1 TYPE CONVERSION: JAVASCRIPT → PERL
 
 This module converts returned values from JavaScript thus:
@@ -137,7 +141,7 @@ Pull requests to improve portability are welcome!
 
 =head1 SEE ALSO
 
-This isn’t CPAN’s first JavaScript module by a long shot:
+Other JavaScript modules on CPAN include:
 
 =over
 
@@ -152,8 +156,8 @@ V8 versions.
 
 =item * L<JE> is a pure-Perl (!) JavaScript engine.
 
-=item * L<JavaScript> and L<JavaScript::Lite> interface with Mozilla’s
-L<SpiderMonkey|https://spidermonkey.dev/> engine.
+=item * L<JavaScript> and L<JavaScript::Lite> expose Mozilla’s
+L<SpiderMonkey|https://spidermonkey.dev/> engine to Perl.
 
 =back
 
