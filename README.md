@@ -14,10 +14,13 @@ Quick and dirty …
 # DESCRIPTION
 
 This library embeds Fabrice Bellard’s [QuickJS](https://bellard.org/quickjs)
-engine into Perl. You can thus run JavaScript directly in your Perl programs.
+engine into a Perl XS module. You can thus run JavaScript
+([ES2020](https://tc39.github.io/ecma262/)) specification) directly in your
+Perl programs.
 
-No external C libraries are needed; we embed QuickJS directly into the
-generated XS module.
+This distribution includes all needed C code; unlike with most XS modules
+that interface with C libraries, you don’t need QuickJS pre-installed on
+your system.
 
 # METHODS
 
