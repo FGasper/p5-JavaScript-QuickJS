@@ -363,6 +363,12 @@ static JSValue _sv_to_jsvalue(pTHX_ JSContext* ctx, SV* value, SV** error_svp) {
         }
     }
     else {
+#ifdef SvIsBOOL
+        if (SvIsBOOL(value)) {
+            return JS_NewBool(ctx, SvTRUE(value));
+        }
+#endif
+
         if (SvNOK(value)) {
             return JS_NewFloat64(ctx, (double) SvNV(value));
         }
