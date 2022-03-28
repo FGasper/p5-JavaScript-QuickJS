@@ -4,6 +4,7 @@ blib/
 *.c
 *.bs
 Makefile
+Makefile.quickjs
 Makefile.old
 *META.*
 .*.sw?
