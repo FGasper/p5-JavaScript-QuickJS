@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Deep;
 use Test::FailWarnings;
 
 use JavaScript::QuickJS;
@@ -23,7 +24,7 @@ my $result = $js->eval( q<
     ];
 > );
 
-is_deeply(
+cmp_deeply(
     $result,
     [
         !!1,
@@ -31,7 +32,7 @@ is_deeply(
         0,
         -1,
         999,
-        99.9999,
+        num(99.9999, 0.01),
         [ "abc", "ünicøde" ],
         { foo => "bar", baz => undef, undefined => undef },
     ],

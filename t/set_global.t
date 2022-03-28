@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Deep;
 use Test::FailWarnings;
 use Data::Dumper;
 
@@ -44,7 +45,12 @@ for my $rtval (@roundtrip) {
     local $Data::Dumper::Indent = 0;
     my $str = Dumper($rtval);
 
-    is_deeply($got, $rtval, "gave & received: $str" );
+    if ($rtval =~ tr<.><>) {
+        cmp_deeply($got, num($rtval, 0.01), "gave & received: $str" );
+    }
+    else {
+        is_deeply($got, $rtval, "gave & received: $str" );
+    }
 }
 
 eval { $js->set_global( regexp => qr/abc/ ) };
