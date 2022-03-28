@@ -47,4 +47,10 @@ for my $rtval (@roundtrip) {
     is_deeply($got, $rtval, "gave & received: $str" );
 }
 
+eval { $js->set_global( regexp => qr/abc/ ) };
+my $err = $@;
+
+like($err, qr<abc>, 'error mentions what can’t be converted');
+like($err, qr<javascript>i, 'error mentions JS');
+
 done_testing;

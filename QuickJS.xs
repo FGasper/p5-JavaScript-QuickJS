@@ -18,7 +18,7 @@ typedef struct {
 
 const char* __jstype_name_back[] = {
     [JS_TAG_BIG_DECIMAL - JS_TAG_FIRST] = "big decimal",
-    [JS_TAG_BIG_INT - JS_TAG_FIRST] = "big int",
+    [JS_TAG_BIG_INT - JS_TAG_FIRST] = "big integer",
     [JS_TAG_BIG_FLOAT - JS_TAG_FIRST] = "big float",
     [JS_TAG_SYMBOL - JS_TAG_FIRST] = "symbol",
     [JS_TAG_MODULE - JS_TAG_FIRST] = "module",
@@ -29,11 +29,11 @@ const char* __jstype_name_back[] = {
     [99] = NULL,
 };
 
-#define _jstype_name(typenum) __jstype_name_back[ JS_TAG_FIRST + typenum ]
+#define _jstype_name(typenum) __jstype_name_back[ typenum - JS_TAG_FIRST ]
 
-static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval);
+static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp);
 
-static inline SV* _JSValue_object_to_SV (pTHX_ JSContext* ctx, JSValue jsval) {
+static inline SV* _JSValue_object_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp) {
     JSPropertyEnum *tab_atom;
     uint32_t tab_atom_count;
 
@@ -51,20 +51,31 @@ static inline SV* _JSValue_object_to_SV (pTHX_ JSContext* ctx, JSValue jsval) {
 
         JSValue value = JS_GetProperty(ctx, jsval, tab_atom[i].atom);
 
-        hv_store(hv, keystr, -strlen, _JSValue_to_SV(aTHX_ ctx, value), 0);
+        SV* val_sv = _JSValue_to_SV(aTHX_ ctx, value, err_svp);
+
+        if (val_sv) {
+            hv_store(hv, keystr, -strlen, val_sv, 0);
+        }
 
         JS_FreeCString(ctx, keystr);
         JS_FreeValue(ctx, key);
         JS_FreeValue(ctx, value);
         JS_FreeAtom(ctx, tab_atom[i].atom);
+
+        if (!val_sv) break;
     }
 
     js_free(ctx, tab_atom);
 
+    if (*err_svp) {
+        SvREFCNT_dec( (SV*) hv );
+        return NULL;
+    }
+
     return newRV_noinc((SV*) hv);
 }
 
-static inline SV* _JSValue_array_to_SV (pTHX_ JSContext* ctx, JSValue jsval) {
+static inline SV* _JSValue_array_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp) {
     JSValue jslen = JS_GetPropertyStr(ctx, jsval, "length");
     uint32_t len;
     JS_ToUint32(ctx, &len, jslen);
@@ -76,23 +87,35 @@ static inline SV* _JSValue_array_to_SV (pTHX_ JSContext* ctx, JSValue jsval) {
         av_fill( av, len - 1 );
         for (uint32_t i=0; i<len; i++) {
             JSValue jsitem = JS_GetPropertyUint32(ctx, jsval, i);
-            av_store( av, i, _JSValue_to_SV(aTHX_ ctx, jsitem) );
+
+            SV* val_sv = _JSValue_to_SV(aTHX_ ctx, jsitem, err_svp);
+
+            if (val_sv) av_store( av, i, val_sv );
+
             JS_FreeValue(ctx, jsitem);
+
+            if (!val_sv) break;
         }
+    }
+
+    if (*err_svp) {
+        SvREFCNT_dec((SV*) av);
+        return NULL;
     }
 
     return newRV_noinc((SV*) av);
 }
 
 /* NO JS exceptions allowed here! */
-static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval) {
+static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp) {
     SV* RETVAL;
 
     int tag = JS_VALUE_GET_NORM_TAG(jsval);
 
     switch (tag) {
         case JS_TAG_EXCEPTION:
-            croak("DEV ERROR: Exception must be unwrapped!");
+            *err_svp = newSVpvs("DEV ERROR: Exception must be unwrapped!");
+            return NULL;
 
         case JS_TAG_STRING:
             STMT_START {
@@ -122,13 +145,14 @@ static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval) {
 
         case JS_TAG_OBJECT:
             if (JS_IsFunction(ctx, jsval)) {
-                croak("Cannot convert JS function to Perl!");
+                *err_svp = newSVpvs("Cannot convert JS function to Perl!");
+                return NULL;
             }
             else if (JS_IsArray(ctx, jsval)) {
-                RETVAL = _JSValue_array_to_SV(aTHX_ ctx, jsval);
+                RETVAL = _JSValue_array_to_SV(aTHX_ ctx, jsval, err_svp);
             }
             else {
-                RETVAL = _JSValue_object_to_SV(aTHX_ ctx, jsval);
+                RETVAL = _JSValue_object_to_SV(aTHX_ ctx, jsval, err_svp);
             }
 
             break;
@@ -138,11 +162,13 @@ static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval) {
                 const char* typename = _jstype_name(tag);
 
                 if (typename) {
-                    croak("Cannot convert JS %s (QuickJS tag %d) to Perl!", typename, tag);
+                    *err_svp = newSVpvf("Cannot convert JS %s (QuickJS tag %d) to Perl!", typename, tag);
                 }
                 else {
-                    croak("Cannot convert (unexpected) JS tag value %d to Perl!", tag);
+                    *err_svp = newSVpvf("Cannot convert (unexpected) JS tag value %d to Perl!", tag);
                 }
+
+                return NULL;
             } STMT_END;
     }
 
@@ -215,17 +241,26 @@ static JSValue __do_perl_callback(JSContext *ctx, JSValueConst this_val, int arg
 
     SV* error_sv = NULL;
 
-    // TODO: Avoid exceptions here:
     for (int a=0; a<argc; a++) {
-        args[a] = _JSValue_to_SV(aTHX_ ctx, argv[a]);
+        args[a] = _JSValue_to_SV(aTHX_ ctx, argv[a], &error_sv);
+
+        if (error_sv) {
+            while (--a >= 0) {
+                SvREFCNT_dec(args[a]);
+            }
+
+            break;
+        }
     }
 
-    SV* from_perl = exs_call_sv_scalar_trapped(cb_sv, args, &error_sv);
+    if (!error_sv) {
+        SV* from_perl = exs_call_sv_scalar_trapped(cb_sv, args, &error_sv);
 
-    if (from_perl) {
-        JSValue to_js = _sv_to_jsvalue(aTHX_ ctx, from_perl, &error_sv);
+        if (from_perl) {
+            JSValue to_js = _sv_to_jsvalue(aTHX_ ctx, from_perl, &error_sv);
 
-        if (!error_sv) return to_js;
+            if (!error_sv) return to_js;
+        }
     }
 
     JSValue jserr = _sv_error_to_jsvalue(aTHX_ ctx, error_sv);
@@ -239,76 +274,78 @@ static JSValue _sv_to_jsvalue(pTHX_ JSContext* ctx, SV* value, SV** error_svp) {
     }
 
     if (SvROK(value)) {
-        switch (SvTYPE(SvRV(value))) {
-            case SVt_PVCV:
-                _ctx_add_sv(aTHX_ ctx, value);
+        if (!sv_isobject(value)) {
+            switch (SvTYPE(SvRV(value))) {
+                case SVt_PVCV:
+                    _ctx_add_sv(aTHX_ ctx, value);
 
-                /* A hack to store our callback via the func_data pointer: */
-                JSValue dummy = JS_MKPTR(JS_TAG_INT, value);
+                    /* A hack to store our callback via the func_data pointer: */
+                    JSValue dummy = JS_MKPTR(JS_TAG_INT, value);
 
-                return JS_NewCFunctionData(
-                    ctx,
-                    __do_perl_callback,
-                    0, 0,
-                    1, &dummy
-                );
+                    return JS_NewCFunctionData(
+                        ctx,
+                        __do_perl_callback,
+                        0, 0,
+                        1, &dummy
+                    );
 
-            case SVt_PVAV: STMT_START {
-                AV* av = (AV*) SvRV(value);
-                JSValue jsarray = JS_NewArray(ctx);
-                JS_SetPropertyStr(ctx, jsarray, "length", JS_NewUint32(ctx, 1 + av_len(av)));
-                for (int32_t i=0; i <= av_len(av); i++) {
-                    SV** svp = av_fetch(av, i, 0);
-                    assert(svp);
-                    assert(*svp);
+                case SVt_PVAV: STMT_START {
+                    AV* av = (AV*) SvRV(value);
+                    JSValue jsarray = JS_NewArray(ctx);
+                    JS_SetPropertyStr(ctx, jsarray, "length", JS_NewUint32(ctx, 1 + av_len(av)));
+                    for (int32_t i=0; i <= av_len(av); i++) {
+                        SV** svp = av_fetch(av, i, 0);
+                        assert(svp);
+                        assert(*svp);
 
-                    JSValue jsval = _sv_to_jsvalue(aTHX_ ctx, *svp, error_svp);
+                        JSValue jsval = _sv_to_jsvalue(aTHX_ ctx, *svp, error_svp);
 
-                    if (*error_svp) {
-                        JS_FreeValue(ctx, jsarray);
-                        return _sv_error_to_jsvalue(aTHX_ ctx, *error_svp);
+                        if (*error_svp) {
+                            JS_FreeValue(ctx, jsarray);
+                            return _sv_error_to_jsvalue(aTHX_ ctx, *error_svp);
+                        }
+
+                        JS_SetPropertyUint32(ctx, jsarray, i, jsval);
                     }
 
-                    JS_SetPropertyUint32(ctx, jsarray, i, jsval);
-                }
+                    return jsarray;
+                } STMT_END;
 
-                return jsarray;
-            } STMT_END;
+                case SVt_PVHV: STMT_START {
+                    HV* hv = (HV*) SvRV(value);
+                    JSValue jsobj = JS_NewObject(ctx);
 
-            case SVt_PVHV: STMT_START {
-                HV* hv = (HV*) SvRV(value);
-                JSValue jsobj = JS_NewObject(ctx);
+                    hv_iterinit(hv);
 
-                hv_iterinit(hv);
+                    HE* hvent;
+                    while ( (hvent = hv_iternext(hv)) ) {
+                        SV* key_sv = hv_iterkeysv(hvent);
+                        SV* val_sv = hv_iterval(hv, hvent);
 
-                HE* hvent;
-                while ( (hvent = hv_iternext(hv)) ) {
-                    SV* key_sv = hv_iterkeysv(hvent);
-                    SV* val_sv = hv_iterval(hv, hvent);
+                        STRLEN keylen;
+                        const char* key = SvPVutf8(key_sv, keylen);
 
-                    STRLEN keylen;
-                    const char* key = SvPVutf8(key_sv, keylen);
+                        JSValue jsval = _sv_to_jsvalue(aTHX_ ctx, val_sv, error_svp);
+                        if (*error_svp) {
+                            JS_FreeValue(ctx, jsobj);
+                            return _sv_error_to_jsvalue(aTHX_ ctx, *error_svp);
+                        }
 
-                    JSValue jsval = _sv_to_jsvalue(aTHX_ ctx, val_sv, error_svp);
-                    if (*error_svp) {
-                        JS_FreeValue(ctx, jsobj);
-                        return _sv_error_to_jsvalue(aTHX_ ctx, *error_svp);
+                        JSAtom prop = JS_NewAtomLen(ctx, key, keylen);
+
+                        /* NB: ctx takes over jsval. */
+                        JS_DefinePropertyValue(ctx, jsobj, prop, jsval, JS_PROP_WRITABLE);
+
+                        JS_FreeAtom(ctx, prop);
                     }
 
-                    JSAtom prop = JS_NewAtomLen(ctx, key, keylen);
+                    return jsobj;
+                } STMT_END;
 
-                    /* NB: ctx takes over jsval. */
-                    JS_DefinePropertyValue(ctx, jsobj, prop, jsval, JS_PROP_WRITABLE);
-
-                    JS_FreeAtom(ctx, prop);
-                }
-
-                return jsobj;
-            } STMT_END;
-
-            default:
-                /* We’ll croak below. */
-                break;
+                default:
+                    /* We’ll croak below. */
+                    break;
+            }
         }
     }
     else {
@@ -339,7 +376,9 @@ static JSValue _sv_to_jsvalue(pTHX_ JSContext* ctx, SV* value, SV** error_svp) {
         }
     }
 
-    croak("Cannot convert %" SVf " to JavaScript!", value);
+    *error_svp = newSVpvf("Cannot convert %" SVf " to JavaScript!", value);
+
+    return JS_NULL;
 }
 
 JSContext* _create_new_jsctx( pTHX_ JSRuntime *rt ) {
@@ -434,8 +473,6 @@ std (SV* self_sv)
 SV*
 set_global (SV* self_sv, SV* jsname_sv, SV* value_sv)
     CODE:
-        RETVAL = SvREFCNT_inc(self_sv);
-
         perl_qjs_s* pqjs = exs_structref_ptr(self_sv);
 
         SV* error = NULL;
@@ -456,6 +493,8 @@ set_global (SV* self_sv, SV* jsname_sv, SV* value_sv)
 
         JS_FreeAtom(pqjs->ctx, prop);
         JS_FreeValue(pqjs->ctx, jsglobal);
+
+        RETVAL = SvREFCNT_inc(self_sv);
 
     OUTPUT:
         RETVAL
@@ -500,7 +539,7 @@ eval (SV* self_sv, SV* js_code_sv)
         }
         else {
             err = NULL;
-            RETVAL = _JSValue_to_SV(aTHX_ ctx, jsret);
+            RETVAL = _JSValue_to_SV(aTHX_ ctx, jsret, &err);
         }
 
         JS_FreeValue(ctx, jsret);
