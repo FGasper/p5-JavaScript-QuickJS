@@ -92,7 +92,7 @@ Pull requests to improve portability are welcome!
 
 use XSLoader;
 
-our $VERSION = '0.01_01';
+our $VERSION = '0.01_02';
 
 XSLoader::load( __PACKAGE__, $VERSION );
 
