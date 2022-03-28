@@ -78,4 +78,5 @@ quickjs/unicode_download.sh
 quickjs/unicode_gen.c
 quickjs/unicode_gen_def.h
 t/basic.t
+t/callback_err.t
 t/set_global.t
