@@ -28,8 +28,8 @@ This module converts returned values from JavaScript thus:
 - JS null & undefined become Perl undef.
 - JS objects …
     - Arrays become Perl array references.
-    - Functions trigger an exception. (TODO: Make those a Perl coderef.)
-    - Other JS objects become Perl hash references.
+    - “Plain” objects become Perl hash references.
+    - Behaviour is **UNDEFINED** for other object types.
 
 # TYPE CONVERSION: PERL → JAVASCRIPT
 
@@ -41,8 +41,10 @@ typecast in JavaScript accordingly!
 - Perl strings, numbers, & booleans become corresponding JavaScript
 primitives.
 - Perl undef becomes JS null.
-- Array & hash references become JavaScript arrays and “plain” objects.
+- Unblessed array & hash references become JavaScript arrays and
+“plain” objects.
 - Perl code references become JavaScript functions.
+- Anything else triggers an exception.
 
 # PLATFORM NOTES
 

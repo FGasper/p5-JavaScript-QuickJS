@@ -44,9 +44,9 @@ This module converts returned values from JavaScript thus:
 
 =item * Arrays become Perl array references.
 
-=item * Functions trigger an exception. (TODO: Make those a Perl coderef.)
+=item * “Plain” objects become Perl hash references.
 
-=item * Other JS objects become Perl hash references.
+=item * Behaviour is B<UNDEFINED> for other object types.
 
 =back
 
@@ -66,9 +66,12 @@ primitives.
 
 =item * Perl undef becomes JS null.
 
-=item * Array & hash references become JavaScript arrays and “plain” objects.
+=item * Unblessed array & hash references become JavaScript arrays and
+“plain” objects.
 
 =item * Perl code references become JavaScript functions.
+
+=item * Anything else triggers an exception.
 
 =back
 
