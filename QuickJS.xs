@@ -11,9 +11,6 @@ typedef struct {
 } perl_qjs_s;
 
 typedef struct {
-#ifdef MULTIPLICITY
-    pTHX;
-#endif
     JSContext *ctx;
     JSValue jsfunc;
     pid_t pid;
@@ -161,9 +158,6 @@ static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp) {
                 perl_qjs_func_s* pqjs = exs_structref_ptr(func_sv);
 
                 *pqjs = (perl_qjs_func_s) {
-    #ifdef MULTIPLICITY
-                    .aTHX = aTHX,
-    #endif
                     .ctx = ctx,
                     .jsfunc = jsval,
                     .pid = getpid(),
@@ -614,9 +608,6 @@ void
 DESTROY( SV* self_sv )
     CODE:
         perl_qjs_func_s* pqjs = exs_structref_ptr(self_sv);
-    #ifdef MULTIPLICITY
-        pTHX = pqjs->aTHX;
-    #endif
 
         /* Functions don’t appear to need to be freed … ? */
 
