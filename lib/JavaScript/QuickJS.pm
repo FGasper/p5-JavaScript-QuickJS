@@ -20,11 +20,60 @@ Quick and dirty …
 
 =head1 DESCRIPTION
 
-This library embeds Fabrice Bellard’s QuickJS
+This library embeds Fabrice Bellard’s L<QuickJS|https://bellard.org/quickjs>
 engine into Perl. You can thus run JavaScript directly in your Perl programs.
 
-This distribution includes QuickJS and builds it as part of building this
-module.
+No external C libraries are needed; we embed QuickJS directly into the
+generated XS module.
+
+=cut
+
+# ----------------------------------------------------------------------
+
+use XSLoader;
+
+our $VERSION = '0.01_02';
+
+XSLoader::load( __PACKAGE__, $VERSION );
+
+# ----------------------------------------------------------------------
+
+=head1 METHODS
+
+For now only a static interface is provided:
+
+=head2 $obj = I<CLASS>->new()
+
+Instantiates I<CLASS>.
+
+=head2 $obj = I<OBJ>->set_globals( NAME1 => VALUE1, .. )
+
+Sets 1 or more globals in I<OBJ>. See below for details on type conversions
+from Perl to JavaScript.
+
+=head2 $obj = I<OBJ>->helpers()
+
+Defines QuickJS’s “helpers”, e.g., C<console.log>.
+
+=head2 $obj = I<OBJ>->std()
+
+Enables (but does I<not> import) QuickJS’s C<std> module.
+
+=head2 $obj = I<OBJ>->os()
+
+Like C<std()> but for QuickJS’s C<os> module.
+
+=head2 $VALUE = eval( $JS_CODE )
+
+Comparable to running C<qjs -e '...'>. Returns the last value from $JS_CODE;
+see below for details on type conversions from JavaScript to Perl.
+
+Untrapped exceptions in JavaScript will be rethrown as Perl exceptions.
+
+=head2 eval_module( $JS_CODE )
+
+Runs $JS_CODE as a module, which enables ES6 module syntax.
+Note that no values can be returned directly in this mode of execution.
 
 =head1 TYPE CONVERSION: JAVASCRIPT → PERL
 
@@ -86,48 +135,27 @@ details.
 
 Pull requests to improve portability are welcome!
 
-=cut
+=head1 SEE ALSO
 
-# ----------------------------------------------------------------------
+This isn’t CPAN’s first JavaScript module by a long shot:
 
-use XSLoader;
+=over
 
-our $VERSION = '0.01_02';
+=item * L<JavaScript::Duktape::XS> and L<JavaScript::Duktape> make the
+L<Duktape|https://duktape.org> library available to Perl. They’re similar to
+this library, but Duktape itself (as of this writing) lacks support for
+several JavaScript constructs that QuickJS supports. (It’s also slower.)
 
-XSLoader::load( __PACKAGE__, $VERSION );
+=item * L<JavaScript::V8> and L<JavaScript::V8::XS> expose Google’s
+L<V8|https://v8.dev> library to Perl. Neither seems to support current
+V8 versions.
 
-# ----------------------------------------------------------------------
+=item * L<JE> is a pure-Perl (!) JavaScript engine.
 
-=head1 METHODS
+=item * L<JavaScript> and L<JavaScript::Lite> interface with Mozilla’s
+L<SpiderMonkey|https://spidermonkey.dev/> engine.
 
-For now only a static interface is provided:
-
-=head2 $obj = I<CLASS>->new()
-
-Instantiates I<CLASS>.
-
-=head2 $obj = I<OBJ>->std()
-
-Enables (but does I<not> import) QuickJS’s C<std> module.
-
-=head2 $obj = I<OBJ>->os()
-
-Like C<std()> but for QuickJS’s C<os> module.
-
-=head2 $obj = I<OBJ>->helpers()
-
-Defines QuickJS’s “helpers”, e.g., C<console.log>.
-
-=head2 $VALUE = eval( $JS_CODE )
-
-Comparable to running C<qjs -e '...'>. Returns the last value from $JS_CODE.
-
-Untrapped exception in JavaScript will be rethrown as Perl exceptions.
-
-=head2 eval_module( $JS_CODE )
-
-Runs $JS_CODE as a module, which enables ES6 module syntax.
-Note that no values can be returned directly in this mode of execution.
+=back
 
 =head1 LICENSE & COPYRIGHT
 

@@ -10,8 +10,9 @@ use JavaScript::QuickJS;
 
 my $js = JavaScript::QuickJS->new();
 
-$js->set_global(
+$js->set_globals(
     trouble => sub { die( bless [], 'Trouble' ) },
+    nada => sub {},
 );
 
 {
@@ -27,8 +28,6 @@ $js->set_global(
     like($err, qr<Trouble=ARRAY>, 'expected error');
     like($err, qr<JavaScript>i, 'error mentions JS');
 }
-
-$js->set_global( nada => sub {} );
 
 {
     eval { $js->eval("nada(BigInt(123123))") };

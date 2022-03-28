@@ -1,3 +1,4 @@
+Changes
 LICENSE
 MANIFEST
 Makefile.PL
@@ -80,4 +81,4 @@ quickjs/unicode_gen_def.h
 t/basic.t
 t/callback_err.t
 t/js_func_to_perl.t
-t/set_global.t
+t/set_globals.t

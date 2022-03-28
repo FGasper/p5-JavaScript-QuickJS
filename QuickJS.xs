@@ -553,27 +553,53 @@ std (SV* self_sv)
         RETVAL
 
 SV*
-set_global (SV* self_sv, SV* jsname_sv, SV* value_sv)
+set_globals (SV* self_sv, ...)
     CODE:
+        if (items < 2) croak("Need at least 1 key/value pair.");
+
+        if (!(items % 2)) croak("Need an even list of key/value pairs.");
+
+        I32 valscount = (items - 1) >> 1;
+
         perl_qjs_s* pqjs = exs_structref_ptr(self_sv);
+
+        SV* jsname_sv, *value_sv;
 
         SV* error = NULL;
 
-        JSValue jsval = _sv_to_jsvalue(aTHX_ pqjs->ctx, value_sv, &error);
+        JSAtom jsnames[valscount];
+        JSValue jsvals[valscount];
 
-        if (error) croak_sv(error);
+        for (int i=0; i < valscount; i++) {
+            jsname_sv = ST( 1 + (i << 1) );
+            value_sv = ST( 2 + (i << 1) );
+
+            STRLEN jsnamelen;
+            const char* jsname_str = SvPVutf8(jsname_sv, jsnamelen);
+
+            JSValue jsval = _sv_to_jsvalue(aTHX_ pqjs->ctx, value_sv, &error);
+
+            if (error) {
+                while (i-- > 0) {
+                    JS_FreeAtom(pqjs->ctx, jsnames[i]);
+                    JS_FreeValue(pqjs->ctx, jsvals[i]);
+                }
+
+                croak_sv(error);
+            }
+
+            jsnames[i] = JS_NewAtomLen(pqjs->ctx, jsname_str, jsnamelen);
+            jsvals[i] = jsval;
+        }
 
         JSValue jsglobal = JS_GetGlobalObject(pqjs->ctx);
 
-        STRLEN jsnamelen;
-        const char* jsname_str = SvPVutf8(jsname_sv, jsnamelen);
+        for (int i=0; i < valscount; i++) {
+            /* NB: ctx takes over jsval. */
+            JS_DefinePropertyValue(pqjs->ctx, jsglobal, jsnames[i], jsvals[i], JS_PROP_WRITABLE);
+            JS_FreeAtom(pqjs->ctx, jsnames[i]);
+        }
 
-        JSAtom prop = JS_NewAtomLen(pqjs->ctx, jsname_str, jsnamelen);
-
-        /* NB: ctx takes over jsval. */
-        JS_DefinePropertyValue(pqjs->ctx, jsglobal, prop, jsval, JS_PROP_WRITABLE);
-
-        JS_FreeAtom(pqjs->ctx, prop);
         JS_FreeValue(pqjs->ctx, jsglobal);
 
         RETVAL = SvREFCNT_inc(self_sv);

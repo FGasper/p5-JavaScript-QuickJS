@@ -10,7 +10,7 @@ use Data::Dumper;
 
 use JavaScript::QuickJS;
 
-my $js = JavaScript::QuickJS->new()->set_global(
+my $js = JavaScript::QuickJS->new()->set_globals(
     add1 => sub { $_[0] + 1 },
 );
 
@@ -36,7 +36,7 @@ my @roundtrip = (
 for my $rtval (@roundtrip) {
     my $key = 'rtval';
 
-    $js->set_global( $key => $rtval );
+    $js->set_globals( $key => $rtval );
 
     my $got = $js->eval($key);
 
@@ -53,7 +53,7 @@ for my $rtval (@roundtrip) {
     }
 }
 
-eval { $js->set_global( regexp => qr/abc/ ) };
+eval { $js->set_globals( regexp => qr/abc/ ) };
 my $err = $@;
 
 like($err, qr<abc>, 'error mentions what can’t be converted');

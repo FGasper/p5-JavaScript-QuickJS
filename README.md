@@ -13,11 +13,48 @@ Quick and dirty …
 
 # DESCRIPTION
 
-This library embeds Fabrice Bellard’s QuickJS
+This library embeds Fabrice Bellard’s [QuickJS](https://bellard.org/quickjs)
 engine into Perl. You can thus run JavaScript directly in your Perl programs.
 
-This distribution includes QuickJS and builds it as part of building this
-module.
+No external C libraries are needed; we embed QuickJS directly into the
+generated XS module.
+
+# METHODS
+
+For now only a static interface is provided:
+
+## $obj = _CLASS_->new()
+
+Instantiates _CLASS_.
+
+## $obj = _OBJ_->set\_globals( NAME1 => VALUE1, .. )
+
+Sets 1 or more globals in _OBJ_. See below for details on type conversions
+from Perl to JavaScript.
+
+## $obj = _OBJ_->helpers()
+
+Defines QuickJS’s “helpers”, e.g., `console.log`.
+
+## $obj = _OBJ_->std()
+
+Enables (but does _not_ import) QuickJS’s `std` module.
+
+## $obj = _OBJ_->os()
+
+Like `std()` but for QuickJS’s `os` module.
+
+## $VALUE = eval( $JS\_CODE )
+
+Comparable to running `qjs -e '...'`. Returns the last value from $JS\_CODE;
+see below for details on type conversions from JavaScript to Perl.
+
+Untrapped exceptions in JavaScript will be rethrown as Perl exceptions.
+
+## eval\_module( $JS\_CODE )
+
+Runs $JS\_CODE as a module, which enables ES6 module syntax.
+Note that no values can be returned directly in this mode of execution.
 
 # TYPE CONVERSION: JAVASCRIPT → PERL
 
@@ -56,36 +93,20 @@ details.
 
 Pull requests to improve portability are welcome!
 
-# METHODS
+# SEE ALSO
 
-For now only a static interface is provided:
+This isn’t CPAN’s first JavaScript module by a long shot:
 
-## $obj = _CLASS_->new()
-
-Instantiates _CLASS_.
-
-## $obj = _OBJ_->std()
-
-Enables (but does _not_ import) QuickJS’s `std` module.
-
-## $obj = _OBJ_->os()
-
-Like `std()` but for QuickJS’s `os` module.
-
-## $obj = _OBJ_->helpers()
-
-Defines QuickJS’s “helpers”, e.g., `console.log`.
-
-## $VALUE = eval( $JS\_CODE )
-
-Comparable to running `qjs -e '...'`. Returns the last value from $JS\_CODE.
-
-Untrapped exception in JavaScript will be rethrown as Perl exceptions.
-
-## eval\_module( $JS\_CODE )
-
-Runs $JS\_CODE as a module, which enables ES6 module syntax.
-Note that no values can be returned directly in this mode of execution.
+- [JavaScript::Duktape::XS](https://metacpan.org/pod/JavaScript%3A%3ADuktape%3A%3AXS) and [JavaScript::Duktape](https://metacpan.org/pod/JavaScript%3A%3ADuktape) make the
+[Duktape](https://duktape.org) library available to Perl. They’re similar to
+this library, but Duktape itself (as of this writing) lacks support for
+several JavaScript constructs that QuickJS supports. (It’s also slower.)
+- [JavaScript::V8](https://metacpan.org/pod/JavaScript%3A%3AV8) and [JavaScript::V8::XS](https://metacpan.org/pod/JavaScript%3A%3AV8%3A%3AXS) expose Google’s
+[V8](https://v8.dev) library to Perl. Neither seems to support current
+V8 versions.
+- [JE](https://metacpan.org/pod/JE) is a pure-Perl (!) JavaScript engine.
+- [JavaScript](https://metacpan.org/pod/JavaScript) and [JavaScript::Lite](https://metacpan.org/pod/JavaScript%3A%3ALite) interface with Mozilla’s
+[SpiderMonkey](https://spidermonkey.dev/) engine.
 
 # LICENSE & COPYRIGHT
 
