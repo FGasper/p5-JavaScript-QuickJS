@@ -88,6 +88,6 @@ Note that no values can be returned directly in this mode of execution.
 
 # LICENSE & COPYRIGHT
 
-Copyright 2019-2021 Gasper Software Consulting.
+Copyright 2022 Gasper Software Consulting.
 
 This library is licensed under the same terms as Perl itself.
