@@ -14,7 +14,7 @@ JavaScript::QuickJS - Run JavaScript via L<QuickJS|https://bellard.org/quickjs> 
 Quick and dirty …
 
     my $val = JavaScript::QuickJS->new()->eval( q<
-        console.log("Hello, Perl!");
+        let foo = "bar";
         [ "The", "last", "value", "is", "returned." ];
     > );
 
@@ -35,15 +35,13 @@ your system.
 
 use XSLoader;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 XSLoader::load( __PACKAGE__, $VERSION );
 
 # ----------------------------------------------------------------------
 
 =head1 METHODS
-
-For now only a static interface is provided:
 
 =head2 $obj = I<CLASS>->new()
 
@@ -66,14 +64,14 @@ Enables (but does I<not> import) QuickJS’s C<std> module.
 
 Like C<std()> but for QuickJS’s C<os> module.
 
-=head2 $VALUE = eval( $JS_CODE )
+=head2 $VALUE = I<OBJ>->eval( $JS_CODE )
 
 Comparable to running C<qjs -e '...'>. Returns the last value from $JS_CODE;
 see below for details on type conversions from JavaScript to Perl.
 
 Untrapped exceptions in JavaScript will be rethrown as Perl exceptions.
 
-=head2 eval_module( $JS_CODE )
+=head2 I<OBJ>->eval_module( $JS_CODE )
 
 Runs $JS_CODE as a module, which enables ES6 module syntax.
 Note that no values can be returned directly in this mode of execution.
