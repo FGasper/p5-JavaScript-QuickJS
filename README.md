@@ -85,6 +85,25 @@ primitives.
 - Perl code references become JavaScript functions.
 - Anything else triggers an exception.
 
+# NUMERIC PRECISION
+
+Note the following if you expect to deal with “large” numbers:
+
+- JavaScript’s numeric-precision limits apply. (cf.
+[Number.MAX\_SAFE\_INTEGER](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER).)
+- Perl’s stringification of numbers may be _less_ precise than
+JavaScript’s storage of those numbers, or even than Perl’s own storage.
+For example, in Perl 5.34 `print 1000000000000001.0` prints `1e+15`.
+
+    To counteract this loss of precision, add 0 to Perl’s numeric scalars
+    (e.g., `print 0 + 1000000000000001.0`); this will encourage Perl to store
+    numbers as integers when possible, which fixes the precision problem.
+
+- Long-double and quad-math perls may lose precision when converting
+numbers to/from JavaScript. To see if this is a problem for you, run
+`perl -V`, and see if the compile-time options mention long doubles or
+quad math.
+
 # PLATFORM NOTES
 
 Due to QuickJS limitations, Linux & macOS are the only platforms known

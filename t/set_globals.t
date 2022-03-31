@@ -71,7 +71,7 @@ for my $rtval (@roundtrip) {
 
     my $alt_double_yn = $Config{'uselongdouble'} || $Config{'usequadmath'};
 
-    my $allow_approx = $alt_double_yn ? ($rtval !~ tr<0-9><>c) : ($rtval =~ tr<.><>);
+    my $allow_approx = $alt_double_yn ? ($rtval !~ tr<0-9.-><>c) : ($rtval =~ tr<.><>);
 
     if ($allow_approx) {
         cmp_deeply($got, num($rtval, 0.01), "gave & received: $str" );
