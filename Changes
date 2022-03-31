@@ -1,5 +1,11 @@
 Revision history for Perl extension JavaScript::QuickJS:
 
+0.03
+- Fix number conversion in 32-bit, non-64-bit-int perls.
+- Fix conversion of Perl “magic” variables to JavaScript.
+- Add more tests against number conversion.
+- Refine Perl->JS typing logic to agree with 5.36 serialization.
+
 0.02 Mon 28 Mar 2022
 - Documentation fixes
 
