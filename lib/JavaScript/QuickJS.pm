@@ -35,7 +35,7 @@ your system.
 
 use XSLoader;
 
-our $VERSION = '0.03_01';
+our $VERSION = '0.03_02';
 
 XSLoader::load( __PACKAGE__, $VERSION );
 
@@ -155,15 +155,12 @@ compile-time options mention long doubles or quad math.
 
 =back
 
-=head1 PLATFORM NOTES
+=head1 OS SUPPORT
 
-Linux & macOS work without issue; QuickJS itself supports these natively.
+QuickJS supports Linux & macOS natively, so these work without issue.
 
-FreeBSD & Cygwin work thanks to a couple small, custom patches that we
-apply when building this library.
-
-Other POSIX OSes will need (hopefully small) tweaks to QuickJS. (Feel free
-to send a pull request.)
+FreeBSD, OpenBSD, & Cygwin work after a few patches that we apply when
+building this library. (Hopefully these will eventually merge into QuickJS.)
 
 =head1 SEE ALSO
 
