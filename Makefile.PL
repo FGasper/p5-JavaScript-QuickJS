@@ -162,13 +162,9 @@ package MY;
 use Config;
 
 sub _gmake_path {
-    for my $fname (@Config{'gmake', 'make'}) {
-        my $path = -e $fname ? $fname : undef;
-        $path ||= File::Which::which($fname);
-        return $path if $path;
-    }
 
-    die "Failed to find GNU make!";
+    # QuickJS requires GNU make.
+    return ( ($^O =~ m<bsd>i) ? $Config{'gmake'} : '$(MAKE)' );
 }
 
 sub postamble {
