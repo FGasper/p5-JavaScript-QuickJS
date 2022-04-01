@@ -68,34 +68,9 @@ WriteMakefile(
     },
 );
 
-# As of this writing, Cygwin & OpenBSD lack malloc_usable_size.
-# We can patch for that, but in the event those OSes add the function
-# we want to make use of it that new hotness. So, let’s check to see if
-# we need the patch before applying it:
-#
-sub _malloc_fix {
-    print "Checking whether this system has malloc_usable_size …$/";
-
-    my $dir = File::Temp::tempdir( CLEANUP => 1 );
-    open my $fh, '>', "$dir/test.c";
-    syswrite $fh, join(
-        "\n",
-        '#include <malloc.h>',
-        'int main() { void* p = malloc_usable_size; (void) p; return 0; }',
-    );
-
-    my $ok = !system $Config{'cc'}, "$dir/test.c";
-
-    print "\t… " . ($ok ? 'Yup!' : 'No, but we can patch for it.') . $/;
-
-    return $ok ? q<> : "#define malloc_usable_size js_malloc_usable_size_unknown";
-}
-
 sub _tweak_for_os {
     my %malloc_fix = (
-        'quickjs.c' => sub {
-            return _malloc_fix() . "$/" . shift;
-        },
+
     );
 
     my %bsd_fix = (
@@ -115,13 +90,24 @@ sub _tweak_for_os {
     );
 
     my %edits = (
-        cygwin => \%malloc_fix,
+        cygwin => {
+            'quickjs.c' => sub {
+                return "#include <malloc.h>$/" . shift;
+            },
+        },
 
         freebsd => \%bsd_fix,
 
         openbsd => {
-            %malloc_fix,
             %bsd_fix,
+
+            'quickjs.c' => sub {
+
+                # OpenBSD 6.5 seems to have *deleted* this function
+                # (https://www.openbsd.org/plus65.html), so we can assume
+                # it won’t return:
+                return "#define malloc_usable_size js_malloc_usable_size_unknown$/" . shift;
+            },
         },
     );
 
