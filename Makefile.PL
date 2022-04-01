@@ -69,6 +69,22 @@ WriteMakefile(
 );
 
 sub _tweak_for_os {
+    my %bsd_fix = (
+        Makefile => sub {
+            return "CONFIG_DARWIN=y$/" . shift;
+        },
+
+        'quickjs-libc.c' => sub {
+            return join(
+                $/,
+                'extern char **environ;',
+                '#include <signal.h>',
+                'typedef sig_t sighandler_t;',
+                shift
+            );
+        },
+    );
+
     my %edits = (
         cygwin => {
             'quickjs.c' => sub {
@@ -76,21 +92,8 @@ sub _tweak_for_os {
             },
         },
 
-        freebsd => {
-            Makefile => sub {
-                return "CONFIG_DARWIN=y$/" . shift;
-            },
-
-            'quickjs-libc.c' => sub {
-                return join(
-                    $/,
-                    'extern char **environ;',
-                    '#include <signal.h>',
-                    'typedef sig_t sighandler_t;',
-                    shift
-                );
-            },
-        },
+        freebsd => \%bsd_fix,
+        openbsd => \%bsd_fix,
     );
 
     if (my $edits_h = $edits{$^O}) {
