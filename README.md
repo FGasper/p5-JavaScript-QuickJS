@@ -106,11 +106,13 @@ compile-time options mention long doubles or quad math.
 
 # PLATFORM NOTES
 
-In theory, any platform that can run Perl and QuickJS can run this library.
-Due to QuickJS portability issues, though, Linux & macOS are the only
-platforms known to work “out-of-the-box”. Other POSIX OSes _can_ work with
-some small tweaks to quickjs; see the compiler errors and `quickjs.c` for
-more details.
+Linux & macOS work without issue; QuickJS itself supports these natively.
+
+FreeBSD & Cygwin work thanks to a couple small, custom patches that we
+apply when building this library.
+
+Other POSIX OSes will need (hopefully small) tweaks to QuickJS. (Feel free
+to send a pull request.)
 
 # SEE ALSO
 

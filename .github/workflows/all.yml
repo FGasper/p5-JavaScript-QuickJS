@@ -161,38 +161,37 @@ jobs:
         run: cd $GITHUB_WORKSPACE; make test
         shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
 
-# Seems to need the same fix as Cygwin:
-#  BSDs:
-#    runs-on: macos-10.15
-#
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        os:
-#          - name: freebsd
-#            version: '13.0'
-#            pkginstall: pkg install -y gcc gmake p5-ExtUtils-MakeMaker
-#          - name: freebsd
-#            version: '12.2'
-#            pkginstall: pkg install -y gcc gmake p5-ExtUtils-MakeMaker
+  BSDs:
+    runs-on: macos-10.15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - name: freebsd
+            version: '13.0'
+            pkginstall: pkg install -y gmake p5-ExtUtils-MakeMaker
+          - name: freebsd
+            version: '12.2'
+            pkginstall: pkg install -y gmake p5-ExtUtils-MakeMaker
 #          - name: openbsd
 #            version: '6.9'
 #            pkginstall: pkg_add gcc gmake curl p5-ExtUtils-MakeMaker
-#
-#    steps:
-#      - uses: actions/checkout@v3
-#        with:
-#          submodules: recursive
-#
-#      - name: Test on ${{ matrix.os.name }}
-#        uses: cross-platform-actions/action@v0.3.1
-#        with:
-#          operating_system: ${{ matrix.os.name }}
-#          version: ${{ matrix.os.version }}
-#          shell: bash
-#          run: |
-#            sudo ${{ matrix.os.pkginstall }}
-#            curl -L https://cpanmin.us | sudo perl - --notest --installdeps --with-configure --with-develop .
-#            perl Makefile.PL
-#            make
-#            prove -wlvmb t
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Test on ${{ matrix.os.name }}
+        uses: cross-platform-actions/action@v0.3.1
+        with:
+          operating_system: ${{ matrix.os.name }}
+          version: ${{ matrix.os.version }}
+          shell: bash
+          run: |
+            sudo ${{ matrix.os.pkginstall }}
+            curl -L https://cpanmin.us | sudo perl - --notest --installdeps --with-configure --with-develop .
+            perl Makefile.PL
+            make
+            prove -wlvmb t

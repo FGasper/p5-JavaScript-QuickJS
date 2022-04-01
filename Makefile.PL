@@ -24,6 +24,8 @@ if (_has_libatomic()) {
     push @libs, '-latomic';
 }
 
+_tweak_for_os();
+
 make_libquickjs();
 
 WriteMakefile(
@@ -66,30 +68,50 @@ WriteMakefile(
 );
 
 sub _tweak_for_os {
-    print "Checking for portability problems …$/";
+    my %edits = (
+        cygwin => {
+            'quickjs.c' => sub {
+                return "#define malloc_usable_size js_malloc_usable_size_unknown$/" . shift;
+            },
+        },
 
-    my %dispatch = (
-        cygwin => sub {
-            my $quickjs_c = shift;
+        freebsd => {
+            Makefile => sub {
+                return "CONFIG_DARWIN=y$/" . shift;
+            },
 
-                substr $quickjs_c, 0, 0, "#define malloc_usable_size js_malloc_usable_size_unknown  /* JS::QJS */$/";
-            }
-        }
+            'quickjs-libc.c' => sub {
+                return join(
+                    $/,
+                    'extern char **environ;',
+                    'typedef sig_t sighandler_t;',
+                    shift
+                );
+            },
+        },
     );
 
-    if (my $cr = $dispatch{$^O}) {
-        my $c_path = 'quickjs/quickjs.c';
+    if (my $edits_h = $edits{$^O}) {
+        my $touchfile_path = File::Spec->catfile('quickjs', 'js-qjs-tweaked');
 
-        my $quickjs_c = File::Slurper::read_binary($c_path);
-
-        if ($quickjs_c !~ m<JS::QJS>) {
-            print "Tweaking QuickJS for $^O compatibility …$/";
-            my $out = $cr->($quickjs_c);
-            File::Slurper::write_binary($c_path, $out);
-            print "Done.$/";
+        if (-e $touchfile_path) {
+            print "QuickJS is already tweaked for $^O compatibility.$/";
         }
         else {
-            print "QuickJS is already tweaked for $^O compatibility.$/";
+            print "Tweaking QuickJS for $^O compatibility …$/";
+
+            for my $fname (keys %$edits_h) {
+                my $path = "quickjs/$fname";
+
+                my $content = File::Slurper::read_binary($path);
+
+                my $out = $edits_h->{$fname}->($content);
+                File::Slurper::write_binary($path, $out);
+            }
+
+            print "Done.$/";
+
+            open my $fh, '>', $touchfile_path;
         }
     }
     else {
@@ -134,12 +156,14 @@ sub make_libquickjs {
 # ----------------------------------------------------------------------
 package MY;
 
+use Config;
+
 sub postamble {
     return <<"MAKE_FRAG"
 
 .PHONY:
 build-quickjs:
-\t\$(MAKE) -C quickjs -f '$PERL_QJS_MAKEFILE_PATH' libquickjs.a
+\t$Config{gmake} -C quickjs -f '$PERL_QJS_MAKEFILE_PATH' libquickjs.a
 MAKE_FRAG
 }
 
