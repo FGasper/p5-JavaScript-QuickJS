@@ -100,18 +100,17 @@ For example, in Perl 5.34 `print 1000000000000001.0` prints `1e+15`.
     numbers as integers when possible, which fixes the precision problem.
 
 - Long-double and quad-math perls may lose precision when converting
-numbers to/from JavaScript. To see if this is a problem for you, run
-`perl -V`, and see if the compile-time options mention long doubles or
-quad math.
+numbers to/from JavaScript. To see if this affects your perl—which, if
+you’re unsure, it probably doesn’t—run `perl -V`, and see if the
+compile-time options mention long doubles or quad math.
 
 # PLATFORM NOTES
 
-Due to QuickJS limitations, Linux & macOS are the only platforms known
-to work “out-of-the-box”. Other POSIX OSes _should_ work with some small
-tweaks to quickjs; see the compiler errors and `quickjs.c` for more
-details.
-
-Pull requests to improve portability are welcome!
+In theory, any platform that can run Perl and QuickJS can run this library.
+Due to QuickJS portability issues, though, Linux & macOS are the only
+platforms known to work “out-of-the-box”. Other POSIX OSes _can_ work with
+some small tweaks to quickjs; see the compiler errors and `quickjs.c` for
+more details.
 
 # SEE ALSO
 

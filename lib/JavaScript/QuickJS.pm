@@ -149,20 +149,19 @@ To counteract this loss of precision, add 0 to Perl’s numeric scalars
 numbers as integers when possible, which fixes the precision problem.
 
 =item * Long-double and quad-math perls may lose precision when converting
-numbers to/from JavaScript. To see if this is a problem for you, run
-C<perl -V>, and see if the compile-time options mention long doubles or
-quad math.
+numbers to/from JavaScript. To see if this affects your perl—which, if
+you’re unsure, it probably doesn’t—run C<perl -V>, and see if the
+compile-time options mention long doubles or quad math.
 
 =back
 
 =head1 PLATFORM NOTES
 
-Due to QuickJS limitations, Linux & macOS are the only platforms known
-to work “out-of-the-box”. Other POSIX OSes I<should> work with some small
-tweaks to quickjs; see the compiler errors and F<quickjs.c> for more
-details.
-
-Pull requests to improve portability are welcome!
+In theory, any platform that can run Perl and QuickJS can run this library.
+Due to QuickJS portability issues, though, Linux & macOS are the only
+platforms known to work “out-of-the-box”. Other POSIX OSes I<can> work with
+some small tweaks to quickjs; see the compiler errors and F<quickjs.c> for
+more details.
 
 =head1 SEE ALSO
 
