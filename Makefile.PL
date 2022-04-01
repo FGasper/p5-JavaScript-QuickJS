@@ -10,6 +10,7 @@ use Config;
 use File::Temp;
 use File::Slurper;
 use File::Spec;
+use File::Which;
 use Cwd;
 
 my $PERL_QJS_MAKEFILE_PATH = File::Spec->catfile( Cwd::getcwd(), 'Makefile.quickjs');
@@ -84,6 +85,7 @@ sub _tweak_for_os {
                 return join(
                     $/,
                     'extern char **environ;',
+                    '#include <signal.h>',
                     'typedef sig_t sighandler_t;',
                     shift
                 );
@@ -149,8 +151,9 @@ sub make_libquickjs {
     #
     $make =~ s<^(\s*CFLAGS\s*=\s*)><$1 -fPIC >mg;
 
-    open my $fh, '>', $PERL_QJS_MAKEFILE_PATH;
+    open my $fh, '>', $PERL_QJS_MAKEFILE_PATH or die "open($PERL_QJS_MAKEFILE_PATH): $!";
     syswrite $fh, $make or die "write custom quickjs make: $!";
+    print "Created `$PERL_QJS_MAKEFILE_PATH`$/";
 }
 
 # ----------------------------------------------------------------------
@@ -158,12 +161,24 @@ package MY;
 
 use Config;
 
+sub _gmake_path {
+    for my $fname (@Config{'gmake', 'make'}) {
+        my $path = -e $fname ? $fname : undef;
+        $path ||= File::Which::which($fname);
+        return $path if $path;
+    }
+
+    die "Failed to find GNU make!";
+}
+
 sub postamble {
+    my $gmake_path = _gmake_path();
+
     return <<"MAKE_FRAG"
 
 .PHONY:
 build-quickjs:
-\t$Config{gmake} -C quickjs -f '$PERL_QJS_MAKEFILE_PATH' libquickjs.a
+\t$gmake_path -C quickjs -f '$PERL_QJS_MAKEFILE_PATH' libquickjs.a
 MAKE_FRAG
 }
 
