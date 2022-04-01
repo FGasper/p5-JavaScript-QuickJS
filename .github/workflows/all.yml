@@ -132,6 +132,35 @@ jobs:
       - name: Run tests on ${{ matrix.platform }}
         run: docker run --rm --interactive ${{ matrix.platform }}/alpine sh -c "apk add curl wget perl perl-dev make git gcc libc-dev; echo Cloning $GITHUB_SERVER_URL/$GITHUB_REPOSITORY; git clone --recurse-submodules $GITHUB_SERVER_URL/$GITHUB_REPOSITORY; cd $( echo $GITHUB_REPOSITORY | cut -d/ -f2 ); echo Checking out $GITHUB_SHA; git checkout $GITHUB_SHA; perl -V; curl -L https://cpanmin.us | perl - --verbose --notest --installdeps --with-configure .; perl Makefile.PL; make; prove -wlvmb t"
 
+  cygwin:
+    runs-on: windows-latest
+
+    steps:
+      - name: Set up Cygwin
+        uses: egor-tensin/setup-cygwin@v3
+        with:
+            platform: x64
+            packages: perl_base perl-ExtUtils-MakeMaker make gcc-g++ libcrypt-devel libnsl-devel bash
+      - uses: actions/checkout@v3
+        with:
+            submodules: recursive
+      - run: perl -V
+        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
+      - run: cpan -T App::cpanminus
+        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
+      - name: Install Dependencies
+        run: cd $GITHUB_WORKSPACE; cpanm --verbose --notest --installdeps --with-configure --with-develop .
+        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
+      - name: perl Makefile.PL
+        run: cd $GITHUB_WORKSPACE; perl Makefile.PL
+        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
+      - name: make
+        run: cd $GITHUB_WORKSPACE; make
+        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
+      - name: make test
+        run: cd $GITHUB_WORKSPACE; make test
+        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
+
 # Seems to need the same fix as Cygwin:
 #  BSDs:
 #    runs-on: macos-10.15
@@ -167,35 +196,3 @@ jobs:
 #            perl Makefile.PL
 #            make
 #            prove -wlvmb t
-
-# ----------------------------------------------------------------------
-
-# Needs malloc_usable_size() to be manually replaced in quickjs.c:
-#  cygwin:
-#    runs-on: windows-latest
-#
-#    steps:
-#      - name: Set up Cygwin
-#        uses: egor-tensin/setup-cygwin@v3
-#        with:
-#            platform: x64
-#            packages: perl_base perl-ExtUtils-MakeMaker make gcc-g++ libcrypt-devel libnsl-devel bash
-#      - uses: actions/checkout@v3
-#        with:
-#            submodules: recursive
-#      - run: perl -V
-#        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
-#      - run: cpan App::cpanminus
-#        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
-#      - name: Install Dependencies
-#        run: cd $GITHUB_WORKSPACE; cpanm --verbose --notest --installdeps --with-configure --with-develop .
-#        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
-#      - name: perl Makefile.PL
-#        run: cd $GITHUB_WORKSPACE; perl Makefile.PL
-#        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
-#      - name: make
-#        run: cd $GITHUB_WORKSPACE; make
-#        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
-#      - name: make test
-#        run: cd $GITHUB_WORKSPACE; make test
-#        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
