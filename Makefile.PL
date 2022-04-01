@@ -8,7 +8,6 @@ use ExtUtils::MakeMaker::CPANfile;
 use Config;
 
 use File::Temp;
-use File::Slurper;
 use File::Spec;
 use Cwd;
 
@@ -64,38 +63,6 @@ WriteMakefile(
         $libpath => 'quickjs',
     },
 );
-
-sub _tweak_for_os {
-    print "Checking for portability problems …$/";
-
-    my %dispatch = (
-        cygwin => sub {
-            my $quickjs_c = shift;
-
-                substr $quickjs_c, 0, 0, "#define malloc_usable_size js_malloc_usable_size_unknown  /* JS::QJS */$/";
-            }
-        }
-    );
-
-    if (my $cr = $dispatch{$^O}) {
-        my $c_path = 'quickjs/quickjs.c';
-
-        my $quickjs_c = File::Slurper::read_binary($c_path);
-
-        if ($quickjs_c !~ m<JS::QJS>) {
-            print "Tweaking QuickJS for $^O compatibility …$/";
-            my $out = $cr->($quickjs_c);
-            File::Slurper::write_binary($c_path, $out);
-            print "Done.$/";
-        }
-        else {
-            print "QuickJS is already tweaked for $^O compatibility.$/";
-        }
-    }
-    else {
-        print "No tweaks for $^O are available. Hopefully none are needed!$/";
-    }
-}
 
 sub _has_libatomic {
     my $dir = File::Temp::tempdir( CLEANUP => 1 );
