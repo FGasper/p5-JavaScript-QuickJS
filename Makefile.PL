@@ -62,10 +62,6 @@ WriteMakefile(
             },
         },
     },
-
-    depend => {
-        $libpath => 'quickjs',
-    },
 );
 
 sub _tweak_for_os {

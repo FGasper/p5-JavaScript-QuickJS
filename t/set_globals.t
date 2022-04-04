@@ -87,4 +87,33 @@ my $err = $@;
 like($err, qr<abc>, 'error mentions what can’t be converted');
 like($err, qr<javascript>i, 'error mentions JS');
 
+#----------------------------------------------------------------------
+
+if ($is_64bit) {
+    my @t = (
+        [ '> IV_MAX', unpack('Q>', "\x80\0\0\0\0\0\0\0") ],
+        [ '<= IV_MAX', unpack('Q>', "\x7f\0\0\0\0\0\0\0") ],
+        [ 'negative 64-bit', unpack('q>', "\x80\0\0\0\0\0\0\0") ],
+    );
+
+    for my $tt (@t) {
+        my ($label, $packed) = @$tt;
+
+        my $expect = unpack('Q>', $packed);
+
+        $js->set_globals(
+            bignum => $expect,
+        );
+
+        my $got = $js->eval('bignum');
+
+        cmp_deeply(
+            $got,
+            num($expect, 100),
+            $label,
+        );
+    }
+
+}
+
 done_testing;

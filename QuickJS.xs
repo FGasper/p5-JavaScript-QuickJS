@@ -43,6 +43,8 @@ const char* __jstype_name_back[] = {
 static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp);
 
 static inline SV* _JSValue_object_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp) {
+    assert(!err_svp);
+
     JSPropertyEnum *tab_atom;
     uint32_t tab_atom_count;
 
@@ -121,11 +123,9 @@ static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp) {
 
     int tag = JS_VALUE_GET_NORM_TAG(jsval);
 
-    switch (tag) {
-        case JS_TAG_EXCEPTION:
-            *err_svp = newSVpvs("DEV ERROR: Exception must be unwrapped!");
-            return NULL;
+    assert(tag != JS_TAG_EXCEPTION);
 
+    switch (tag) {
         case JS_TAG_STRING:
             STMT_START {
                 STRLEN strlen;

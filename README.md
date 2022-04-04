@@ -104,15 +104,12 @@ numbers to/from JavaScript. To see if this affects your perl—which, if
 you’re unsure, it probably doesn’t—run `perl -V`, and see if the
 compile-time options mention long doubles or quad math.
 
-# PLATFORM NOTES
+# OS SUPPORT
 
-Linux & macOS work without issue; QuickJS itself supports these natively.
+QuickJS supports Linux & macOS natively, so these work without issue.
 
-FreeBSD & Cygwin work thanks to a couple small, custom patches that we
-apply when building this library.
-
-Other POSIX OSes will need (hopefully small) tweaks to QuickJS. (Feel free
-to send a pull request.)
+FreeBSD, OpenBSD, & Cygwin work after a few patches that we apply when
+building this library. (Hopefully these will eventually merge into QuickJS.)
 
 # SEE ALSO
 
