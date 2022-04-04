@@ -97,9 +97,7 @@ if ($is_64bit) {
     );
 
     for my $tt (@t) {
-        my ($label, $packed) = @$tt;
-
-        my $expect = unpack('Q>', $packed);
+        my ($label, $expect) = @$tt;
 
         $js->set_globals(
             bignum => $expect,
