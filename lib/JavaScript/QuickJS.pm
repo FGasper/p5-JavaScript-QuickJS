@@ -22,7 +22,7 @@ Quick and dirty …
 
 This library embeds Fabrice Bellard’s L<QuickJS|https://bellard.org/quickjs>
 engine into a Perl XS module. You can thus run JavaScript
-(L<ES2020|https://tc39.github.io/ecma262/>) specification) directly in your
+(L<ES2020|https://tc39.github.io/ecma262/> specification) directly in your
 Perl programs.
 
 This distribution includes all needed C code; unlike with most XS modules
@@ -189,6 +189,7 @@ L<SpiderMonkey|https://spidermonkey.dev/> engine to Perl.
 Copyright 2022 Gasper Software Consulting.
 
 This library is licensed under the same terms as Perl itself.
+See L<perlartistic>.
 
 =cut
 

@@ -15,7 +15,7 @@ Quick and dirty …
 
 This library embeds Fabrice Bellard’s [QuickJS](https://bellard.org/quickjs)
 engine into a Perl XS module. You can thus run JavaScript
-([ES2020](https://tc39.github.io/ecma262/)) specification) directly in your
+([ES2020](https://tc39.github.io/ecma262/) specification) directly in your
 Perl programs.
 
 This distribution includes all needed C code; unlike with most XS modules
@@ -131,3 +131,4 @@ V8 versions.
 Copyright 2022 Gasper Software Consulting.
 
 This library is licensed under the same terms as Perl itself.
+See [perlartistic](https://metacpan.org/pod/perlartistic).
