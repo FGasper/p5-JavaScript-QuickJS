@@ -97,12 +97,12 @@ jobs:
       image: centos:centos7
 
     steps:
+      - run: yum -y update
+      - run: yum install -y git perl-App-cpanminus
       - uses: actions/checkout@main
         with:
             submodules: recursive
       - run: perl -V
-      - run: yum update
-      - run: yum install -y perl-App-cpanminus
       - name: Install Dependencies
         run: cpanm --notest --installdeps --with-configure --with-develop .
       - name: perl Makefile.PL
