@@ -1,7 +1,7 @@
 Revision history for Perl extension JavaScript::QuickJS:
 
-0.06
-- Fix compatibility with CentOS 7 and CloudLinux 6.
+0.06 Fri 22 Apr 2022
+- Fix compatibility with old Linuxes (e.g., CentOS 7 and CloudLinux 6).
 
 0.05 Thu 7 Apr 2022
 - Fix helpers() method.
