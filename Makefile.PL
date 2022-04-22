@@ -25,6 +25,10 @@ if (_can_link_libatomic()) {
     push @libs, '-latomic';
 }
 
+if (_need_librt()) {
+    push @libs, '-lrt';
+}
+
 _tweak_for_os();
 
 if (!_stdatomic_h_exists()) {
@@ -140,6 +144,33 @@ sub _tweak_for_os {
     }
 }
 
+# In CloudLinux 6, glibc is old enough to need -lrt. Test for that.
+#
+my $_cached_need_librt;
+sub _need_librt {
+    return $_cached_need_librt if defined $_cached_need_librt;
+
+    my $dir = File::Temp::tempdir( CLEANUP => 1 );
+    open my $fh, '>', "$dir/test.c";
+    syswrite $fh, join(
+        "\n",
+        '#ifdef __GLIBC__',
+        '#  if __GLIBC__ < 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 17)',
+        '#      error "This system needs librt"',
+        '#  endif',
+        '#endif',
+        'int main() { return 0; }',
+    );
+
+    print "Checking whether this system needs to link to librt …\n";
+
+    my $ok = !!system $Config{'cc'}, "$dir/test.c";
+
+    print "\t… " . ($ok ? 'Looks like it.' : 'Guess not.') . "\n";
+
+    return $_cached_need_librt = $ok;
+}
+
 sub _can_link_libatomic {
     my $dir = File::Temp::tempdir( CLEANUP => 1 );
     open my $fh, '>', "$dir/test.c";
@@ -183,7 +214,7 @@ sub _avoid_stdatomic_h {
     my $quickjs_c = File::Slurper::read_binary($qjs_c_path);
 
     $quickjs_c =~ s<^#define\s+CONFIG_ATOMICS></* no atomics - J::QJS */>m or do {
-        die "Did no replace for quickjs.c?";
+        warn "Did no replace for quickjs.c?\n";
     };
     File::Slurper::write_binary($qjs_c_path, $quickjs_c);
 
@@ -191,7 +222,7 @@ sub _avoid_stdatomic_h {
     my $quickjs_libc_c = File::Slurper::read_binary($qjs_libc_path);
 
     $quickjs_libc_c =~ s<^#define\s+USE_WORKER></* no atomics - J::QJS */>m or do {
-        die "Did no replace for quickjs-libc.c?";
+        warn "Did no replace for quickjs-libc.c?\n";
     };
     File::Slurper::write_binary($qjs_libc_path, $quickjs_libc_c);
 }
@@ -208,6 +239,15 @@ sub make_libquickjs {
     # shared library.
     #
     $make =~ s<^(\s*CFLAGS\s*=\s*)><$1 -fPIC >mg;
+
+    # In systems old enough to need -lrt (e.g., CloudLinux 6),
+    # assume we need these other omissions as well:
+    #
+    if (_need_librt()) {
+        $make =~ s<^(.*no-format-truncation)><#$1 -- J::QJS>;
+        $make =~ s<^(CONFIG_BIGNUM)><#$1 -- J::QJS>;
+        $make =~ s<^(CONFIG_LTO)><#$1 -- J::QJS>;
+    }
 
     open my $fh, '>', $PERL_QJS_MAKEFILE_PATH or die "open($PERL_QJS_MAKEFILE_PATH): $!";
     syswrite $fh, $make or die "write custom quickjs make: $!";
