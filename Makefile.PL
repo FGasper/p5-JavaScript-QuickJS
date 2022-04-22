@@ -70,21 +70,6 @@ WriteMakefile(
     },
 );
 
-sub _set_noatomic {
-    my $qjs_c_path = File::Spec->catfile( qw( quickjs quickjs.c ) );
-
-    my $quickjs_c = File::Slurper::read_binary($qjs_c_path);
-
-    $quickjs_c =~ s<^#define\s+CONFIG_ATOMICS></* no atomics - J::QJS */>;
-    File::Slurper::write_binary($qjs_c_path, $quickjs_c);
-
-    my $qjs_libc_path = File::Spec->catfile( qw( quickjs quickjs-libc.c ) );
-    my $quickjs_libc_c = File::Slurper::read_binary($qjs_c_path);
-
-    $quickjs_libc_c =~ s<^#define\s+USE_WORKER></* no atomics - J::QJS */>;
-    File::Slurper::write_binary($qjs_libc_path, $quickjs_libc_c);
-}
-
 sub _tweak_for_os {
     my %bsd_fix = (
         Makefile => sub {
@@ -188,6 +173,21 @@ sub _stdatomic_h_exists {
     print "\t… " . ($ok ? 'Looks like it.' : 'Guess not.') . "\n";
 
     return $ok;
+}
+
+sub _set_noatomic {
+    my $qjs_c_path = File::Spec->catfile( qw( quickjs quickjs.c ) );
+
+    my $quickjs_c = File::Slurper::read_binary($qjs_c_path);
+
+    $quickjs_c =~ s<^#define\s+CONFIG_ATOMICS></* no atomics - J::QJS */>;
+    File::Slurper::write_binary($qjs_c_path, $quickjs_c);
+
+    my $qjs_libc_path = File::Spec->catfile( qw( quickjs quickjs-libc.c ) );
+    my $quickjs_libc_c = File::Slurper::read_binary($qjs_libc_path);
+
+    $quickjs_libc_c =~ s<^#define\s+USE_WORKER></* no atomics - J::QJS */>;
+    File::Slurper::write_binary($qjs_libc_path, $quickjs_libc_c);
 }
 
 sub make_libquickjs {
