@@ -28,7 +28,7 @@ if (_can_link_libatomic()) {
 _tweak_for_os();
 
 if (!_stdatomic_h_exists()) {
-    _set_noatomic();
+    _avoid_stdatomic_h();
 }
 
 make_libquickjs();
@@ -175,18 +175,24 @@ sub _stdatomic_h_exists {
     return $ok;
 }
 
-sub _set_noatomic {
+sub _avoid_stdatomic_h {
+    print "Tweaking QuickJS to avoid use of stdatomic.h …\n";
+
     my $qjs_c_path = File::Spec->catfile( qw( quickjs quickjs.c ) );
 
     my $quickjs_c = File::Slurper::read_binary($qjs_c_path);
 
-    $quickjs_c =~ s<^#define\s+CONFIG_ATOMICS></* no atomics - J::QJS */>;
+    $quickjs_c =~ s<^#define\s+CONFIG_ATOMICS></* no atomics - J::QJS */>m or do {
+        die "Did no replace for quickjs.c?";
+    };
     File::Slurper::write_binary($qjs_c_path, $quickjs_c);
 
     my $qjs_libc_path = File::Spec->catfile( qw( quickjs quickjs-libc.c ) );
     my $quickjs_libc_c = File::Slurper::read_binary($qjs_libc_path);
 
-    $quickjs_libc_c =~ s<^#define\s+USE_WORKER></* no atomics - J::QJS */>;
+    $quickjs_libc_c =~ s<^#define\s+USE_WORKER></* no atomics - J::QJS */>m or do {
+        die "Did no replace for quickjs-libc.c?";
+    };
     File::Slurper::write_binary($qjs_libc_path, $quickjs_libc_c);
 }
 
