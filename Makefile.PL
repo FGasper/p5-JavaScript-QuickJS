@@ -154,6 +154,7 @@ sub _need_librt {
     open my $fh, '>', "$dir/test.c";
     syswrite $fh, join(
         "\n",
+        '#include <stdlib.h>',
         '#ifdef __GLIBC__',
         '#  if __GLIBC__ < 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 17)',
         '#      error "This system needs librt"',
@@ -244,9 +245,9 @@ sub make_libquickjs {
     # assume we need these other omissions as well:
     #
     if (_need_librt()) {
-        $make =~ s<^(.*no-format-truncation)><#$1 -- J::QJS>;
-        $make =~ s<^(CONFIG_BIGNUM)><#$1 -- J::QJS>;
-        $make =~ s<^(CONFIG_LTO)><#$1 -- J::QJS>;
+        $make =~ s<^(.*no-format-truncation)><#$1 -- J::QJS>m;
+        $make =~ s<^(CONFIG_BIGNUM)><#$1 -- J::QJS>m;
+        $make =~ s<^(CONFIG_LTO)><#$1 -- J::QJS>m;
     }
 
     open my $fh, '>', $PERL_QJS_MAKEFILE_PATH or die "open($PERL_QJS_MAKEFILE_PATH): $!";
