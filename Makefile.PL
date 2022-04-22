@@ -54,10 +54,11 @@ WriteMakefile(
 
     LIBS => "@libs",
 
-    OBJECT => [
+    OBJECT => join(
+        q< >,
         '$(BASEEXT)$(OBJ_EXT)',
         $libpath,
-    ],
+    ),
 
     META_MERGE => {
         'meta-spec' => { version => 2 },
