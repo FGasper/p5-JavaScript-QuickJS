@@ -90,6 +90,28 @@ jobs:
       - name: Run Tests
         run: prove -wlvmb t
 
+  linux-centos7:
+    runs-on: ubuntu-latest
+
+    container:
+      image: centos:centos7
+
+    steps:
+      - uses: actions/checkout@main
+        with:
+            submodules: recursive
+      - run: perl -V
+      - run: yum update
+      - run: yum install -y perl-App-cpanminus
+      - name: Install Dependencies
+        run: cpanm --notest --installdeps --with-configure --with-develop .
+      - name: perl Makefile.PL
+        run: perl Makefile.PL
+      - name: make
+        run: make
+      - name: Run Tests
+        run: prove -wlvmb t
+
   mac:
     runs-on: macOS-latest
 

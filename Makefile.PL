@@ -21,11 +21,15 @@ my $libpath = File::Spec->catfile('quickjs', 'libquickjs.a');
 my @libs = qw(-lm -ldl -lpthread);
 
 # RaspiOS needs this:
-if (_has_libatomic()) {
+if (_can_link_libatomic()) {
     push @libs, '-latomic';
 }
 
 _tweak_for_os();
+
+if (!_stdatomic_h_exists()) {
+    _set_noatomic();
+}
 
 make_libquickjs();
 
@@ -65,6 +69,21 @@ WriteMakefile(
         },
     },
 );
+
+sub _set_noatomic {
+    my $qjs_c_path = File::Spec->catfile( qw( quickjs quickjs.c ) );
+
+    my $quickjs_c = File::Slurper::read_binary($qjs_c_path);
+
+    $quickjs_c =~ s<^#define\s+CONFIG_ATOMICS></* no atomics - J::QJS */>;
+    File::Slurper::write_binary($qjs_c_path, $quickjs_c);
+
+    my $qjs_libc_path = File::Spec->catfile( qw( quickjs quickjs-libc.c ) );
+    my $quickjs_libc_c = File::Slurper::read_binary($qjs_c_path);
+
+    $quickjs_libc_c =~ s<^#define\s+USE_WORKER></* no atomics - J::QJS */>;
+    File::Slurper::write_binary($qjs_libc_path, $quickjs_libc_c);
+}
 
 sub _tweak_for_os {
     my %bsd_fix = (
@@ -136,7 +155,7 @@ sub _tweak_for_os {
     }
 }
 
-sub _has_libatomic {
+sub _can_link_libatomic {
     my $dir = File::Temp::tempdir( CLEANUP => 1 );
     open my $fh, '>', "$dir/test.c";
     syswrite $fh, join(
@@ -144,9 +163,27 @@ sub _has_libatomic {
         'int main() { return 0; }',
     );
 
-    print "Checking whether this system uses libatomic …\n";
+    print "Checking whether this system can link libatomic …\n";
 
     my $ok = !system $Config{'cc'}, "$dir/test.c", '-latomic';
+
+    print "\t… " . ($ok ? 'Looks like it.' : 'Guess not.') . "\n";
+
+    return $ok;
+}
+
+sub _stdatomic_h_exists {
+    my $dir = File::Temp::tempdir( CLEANUP => 1 );
+    open my $fh, '>', "$dir/test.c";
+    syswrite $fh, join(
+        "\n",
+        '#include <stdatomic.h>',
+        'int main() { return 0; }',
+    );
+
+    print "Checking whether stdatomic.h exists …\n";
+
+    my $ok = !system $Config{'cc'}, "$dir/test.c";
 
     print "\t… " . ($ok ? 'Looks like it.' : 'Guess not.') . "\n";
 
