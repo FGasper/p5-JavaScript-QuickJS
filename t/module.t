@@ -85,4 +85,6 @@ END
 
 undef $js;
 
+chdir $cwd;
+
 done_testing;

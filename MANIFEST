@@ -83,4 +83,5 @@ t/basic.t
 t/callback_err.t
 t/js2perl.t
 t/js_func_to_perl.t
+t/module.t
 t/set_globals.t
