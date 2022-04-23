@@ -425,7 +425,7 @@ static JSValue _sv_to_jsvalue(pTHX_ JSContext* ctx, SV* value, SV** error_svp) {
     return JS_NULL;
 }
 
-JSContext* _create_new_jsctx( pTHX_ JSRuntime *rt ) {
+static JSContext* _create_new_jsctx( pTHX_ JSRuntime *rt ) {
     JSContext *ctx = JS_NewContext(rt);
 
     ctx_opaque_s* ctxdata;
@@ -497,7 +497,7 @@ static void _free_jsctx(pTHX_ JSContext* ctx) {
     }
 }
 
-JSModuleDef *pqjs_module_loader(JSContext *ctx,
+static JSModuleDef *pqjs_module_loader(JSContext *ctx,
                               const char *module_name, void *opaque) {
     char** module_base_path_p = (char**) opaque;
 
