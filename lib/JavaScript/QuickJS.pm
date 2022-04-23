@@ -76,6 +76,15 @@ Untrapped exceptions in JavaScript will be rethrown as Perl exceptions.
 Runs $JS_CODE as a module, which enables ES6 module syntax.
 Note that no values can be returned directly in this mode of execution.
 
+=head2 $obj = I<OBJ>->set_module_base( $PATH )
+
+Sets a base path (a byte string) for ES6 module imports.
+
+=head2 $obj = I<OBJ>->unset_module_base()
+
+Restores QuickJS’s default directory for ES6 module imports
+(as of this writing, it’s the process’s current directory).
+
 =cut
 
 # ----------------------------------------------------------------------
