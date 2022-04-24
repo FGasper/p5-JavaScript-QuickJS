@@ -60,13 +60,13 @@ is(
     'unset_module_base() returns object',
 );
 
-eval { _test_module($js, '(should fail)'); fail 'nonono' };
+eval { _test_module('(should fail)'); fail 'nonono' };
 $err = $@;
 like($err, qr<ReferenceError>, 'module load should fail without default dir');
 
 chdir $dir;
 
-_test_module($js, 'after unset_module_base()');
+_test_module('after unset_module_base()');
 
 sub _test_module {
     my ($label) = @_;
