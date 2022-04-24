@@ -71,6 +71,7 @@ jobs:
         perl-type:
           - 'main-longdouble-buster'
           - 'main-quadmath-buster'
+          - 'main-threaded-buster'
 
     container:
       image: simcop2387/perl-tester:${{ matrix.perl-version }}-${{ matrix.perl-type }}
