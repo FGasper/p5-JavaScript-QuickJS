@@ -168,7 +168,7 @@ static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp) {
 
                 *pqjs = (perl_qjs_func_s) {
                     .ctx = ctx,
-                    .jsfunc = jsval,
+                    .jsfunc = JS_DupValue(ctx, jsval),
                     .pid = getpid(),
                 };
 
@@ -744,7 +744,7 @@ DESTROY( SV* self_sv )
     CODE:
         perl_qjs_func_s* pqjs = exs_structref_ptr(self_sv);
 
-        /* Functions don’t appear to need to be freed … ? */
+        JS_FreeValue(pqjs->ctx, pqjs->jsfunc);
 
         _free_jsctx(aTHX_ pqjs->ctx);
 
