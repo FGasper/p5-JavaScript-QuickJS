@@ -93,6 +93,7 @@ primitives.
 - Perl undef becomes JS null.
 - Unblessed array & hash references become JavaScript arrays and
 “plain” objects.
+- [Types::Serialiser](https://metacpan.org/pod/Types%3A%3ASerialiser) booleans become JavaScript booleans.
 - Perl code references become JavaScript functions.
 - Anything else triggers an exception.
 
