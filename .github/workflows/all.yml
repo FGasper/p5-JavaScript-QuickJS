@@ -40,7 +40,7 @@ jobs:
       image: perldocker/perl-tester:${{ matrix.perl-version }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@main
         with:
             submodules: recursive
       - name: perl -V
@@ -78,7 +78,7 @@ jobs:
       image: simcop2387/perl-tester:${{ matrix.perl-version }}-${{ matrix.perl-type }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@main
         with:
             submodules: recursive
       - run: perl -V
@@ -122,7 +122,7 @@ jobs:
     runs-on: macOS-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@main
         with:
             submodules: recursive
       - name: Set up Perl
@@ -155,7 +155,7 @@ jobs:
           - s390x
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@main
         with:
             submodules: recursive
       - name: Get the qemu container
@@ -168,11 +168,11 @@ jobs:
 
     steps:
       - name: Set up Cygwin
-        uses: egor-tensin/setup-cygwin@v3
+        uses: egor-tensin/setup-cygwin@master
         with:
             platform: x64
             packages: perl_base perl-ExtUtils-MakeMaker make gcc-g++ libcrypt-devel libnsl-devel bash
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@main
         with:
             submodules: recursive
       - run: perl -V
@@ -210,12 +210,12 @@ jobs:
             pkginstall: pkg_add gmake curl p5-ExtUtils-MakeMaker
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@main
         with:
           submodules: recursive
 
       - name: Test on ${{ matrix.os.name }}
-        uses: cross-platform-actions/action@v0.3.1
+        uses: cross-platform-actions/action@master
         with:
           operating_system: ${{ matrix.os.name }}
           version: ${{ matrix.os.version }}
