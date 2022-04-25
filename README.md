@@ -52,6 +52,8 @@ see below for details on type conversions from JavaScript to Perl.
 
 Untrapped exceptions in JavaScript will be rethrown as Perl exceptions.
 
+$JS\_CODE is a _character_ string.
+
 ## _OBJ_->eval\_module( $JS\_CODE )
 
 Runs $JS\_CODE as a module, which enables ES6 module syntax.
@@ -93,6 +95,28 @@ primitives.
 “plain” objects.
 - Perl code references become JavaScript functions.
 - Anything else triggers an exception.
+
+# CHARACTER ENCODING NOTES
+
+Although QuickJS (like all JS engines) assumes its strings are text,
+you can oftentimes pass in byte strings and get a reasonable result.
+
+One place where this falls over, though, is ES6 modules. QuickJS, when
+it loads an ES6 module, decodes that module’s string literals to characters.
+Thus, if you pass in byte strings from Perl, QuickJS will treat your
+Perl byte strings’ code points as character code points, and when you
+combine those code points with the ones from your ES6 module you may
+get mangled output.
+
+Another place that may create trouble is if your argument to `eval()`
+or `eval_module()` (above) contains JSON. Perl’s popular JSON encoders
+output byte strings by default, but as noted above, `eval()` and
+`eval_module()` need _character_ strings. So either configure your
+JSON encoder to output characters, or decode JSON bytes to characters
+before calling `eval()`/`eval_module()`.
+
+For best results, _always_ interact with QuickJS via _character_
+strings, and double-check that you’re doing it that way consistently.
 
 # NUMERIC PRECISION
 

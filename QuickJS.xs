@@ -716,6 +716,8 @@ eval (SV* self_sv, SV* js_code_sv)
         const char* js_code = SvPVutf8(js_code_sv, js_code_len);
 
         int eval_flags = ix ? JS_EVAL_TYPE_MODULE : JS_EVAL_TYPE_GLOBAL;
+        eval_flags |= JS_EVAL_FLAG_STRICT;
+
         JSValue jsret = JS_Eval(ctx, js_code, js_code_len, "", eval_flags);
 
         RETVAL = _return_jsvalue_or_croak(aTHX_ ctx, jsret);
