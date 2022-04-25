@@ -39,6 +39,12 @@ const char* __jstype_name_back[] = {
     [99] = NULL,
 };
 
+#if defined _WIN32 || defined __CYGWIN__
+#   define PATH_SEPARATOR '\\'
+#else
+#   define PATH_SEPARATOR '/'
+#endif
+
 #define _jstype_name(typenum) __jstype_name_back[ typenum - JS_TAG_FIRST ]
 
 static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp);
@@ -524,13 +530,6 @@ static JSModuleDef *pqjs_module_loader(JSContext *ctx,
     return moduledef;
 }
 
-#if defined _WIN32 || defined __CYGWIN__
-#   define PATH_SEPARATOR '\\'
-#else
-#   define PATH_SEPARATOR '/'
-#endif
-
-
 /* ---------------------------------------------------------------------- */
 
 MODULE = JavaScript::QuickJS        PACKAGE = JavaScript::QuickJS
@@ -639,7 +638,10 @@ set_module_base (SV* self_sv, SV* path_sv)
 
         Copy(path, pqjs->module_base_path, 2 + path_len, char);
 
-        // Extra separators don’t hurt anything … right??
+        /** If the given path is “/foo/bar”, we store “/foo/bar/”.
+            This means if “/foo/bar/” is given we store “/foo/bar//”,
+            which is ugly but should work on all supported platforms.
+        */
         pqjs->module_base_path[path_len] = PATH_SEPARATOR;
         pqjs->module_base_path[1 + path_len] = 0;
 
