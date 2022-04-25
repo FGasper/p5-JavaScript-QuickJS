@@ -5,6 +5,8 @@
 
 #define PERL_NS_ROOT "JavaScript::QuickJS"
 
+#define PERL_BOOLEAN_CLASS "Types::Serialiser::Boolean"
+
 typedef struct {
     JSContext *ctx;
     pid_t pid;
@@ -349,7 +351,13 @@ static JSValue _sv_to_jsvalue(pTHX_ JSContext* ctx, SV* value, SV** error_svp) {
         } STMT_END;
 
         case EXS_SVTYPE_REFERENCE:
-            if (sv_isobject(value)) break;
+            if (sv_isobject(value)) {
+                if (sv_derived_from(value, PERL_BOOLEAN_CLASS)) {
+                    return JS_NewBool(ctx, SvTRUE(SvRV(value)));
+                }
+
+                break;
+            }
 
             switch (SvTYPE(SvRV(value))) {
                 case SVt_PVCV:

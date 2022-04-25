@@ -136,6 +136,8 @@ primitives.
 =item * Unblessed array & hash references become JavaScript arrays and
 “plain” objects.
 
+=item * L<Types::Serialiser> booleans become JavaScript booleans.
+
 =item * Perl code references become JavaScript functions.
 
 =item * Anything else triggers an exception.
