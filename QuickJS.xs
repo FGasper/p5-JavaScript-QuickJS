@@ -377,6 +377,7 @@ static JSValue _sv_to_jsvalue(pTHX_ JSContext* ctx, SV* value, SV** error_svp) {
                     AV* av = (AV*) SvRV(value);
                     JSValue jsarray = JS_NewArray(ctx);
                     JS_SetPropertyStr(ctx, jsarray, "length", JS_NewUint32(ctx, 1 + av_len(av)));
+
                     for (int32_t i=0; i <= av_len(av); i++) {
                         SV** svp = av_fetch(av, i, 0);
                         assert(svp);
@@ -779,6 +780,10 @@ call( SV* self_sv, ... )
         JSValue jsret = JS_Call(pqjs->ctx, pqjs->jsfunc, JS_NULL, params_count, jsvars);
 
         RETVAL = _return_jsvalue_or_croak(aTHX_ pqjs->ctx, jsret);
+
+        for (uint32_t i=0; i<params_count; i++) {
+            JS_FreeValue(pqjs->ctx, jsvars[i]);
+        }
 
     OUTPUT:
         RETVAL

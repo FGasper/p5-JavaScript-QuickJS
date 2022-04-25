@@ -2,6 +2,7 @@ Revision history for Perl extension JavaScript::QuickJS:
 
 0.08
 - BUG FIX: Avoid segfault when passing a function from JS to Perl.
+- BUG FIX: Free args to JS function references when call()ed.
 - Set strict mode to always-on.
 - Teach Perl->JSON conversion to recognize Types::Serialiser booleans.
 
