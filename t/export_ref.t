@@ -14,14 +14,21 @@ use Types::Serialiser;
 use JavaScript::QuickJS;
 
 {
+    my $js = JavaScript::QuickJS->new();
+    $js->set_globals( foo => sub { } );
+}
+
+{
     my $ret;
 
     {
         my $js = JavaScript::QuickJS->new()->set_globals(
-            __return => sub { $ret = shift },
+            __return => sub { $ret = shift; () },
         );
 
         $js->eval('__return( function add1(a) { return 1 + a } )');
+
+        $js->set_globals( __return => undef );
     }
 
     is(
@@ -29,6 +36,8 @@ use JavaScript::QuickJS;
         2,
         'add1 called without QuickJS instance',
     );
+
+    undef $ret;
 }
 
 {
@@ -47,7 +56,7 @@ use JavaScript::QuickJS;
     my $ret;
 
     JavaScript::QuickJS->new()->set_globals(
-        __return => sub { $ret = shift },
+        __return => sub { $ret = shift; () },
     )->eval(qq/
         __return( {
             add1: a => 1 + a,
@@ -74,6 +83,8 @@ use JavaScript::QuickJS;
 
         cmp_deeply( $out, [$specimen], "deepen: $render" ) or diag explain $out;
     }
+
+    undef $ret;
 }
 
 done_testing;

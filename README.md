@@ -97,6 +97,43 @@ primitives.
 - Perl code references become JavaScript functions.
 - Anything else triggers an exception.
 
+# MEMORY HANDLING NOTES
+
+If any instance of a class of this distribution is DESTROY()ed at Perl’s
+global destruction, we assume that this is a memory leak, and a warning is
+thrown. To prevent this, avoid circular references.
+
+Callbacks make that tricky. As noted above, JavaScript functions
+given to Perl become Perl code references. Those code references are
+closures around the QuickJS context & runtime; once the code reference
+is destroyed, we release its reference to QuickJS.
+
+Perl code references given to JavaScript become JavaScript functions;
+however, QuickJS exposes no facility analogous to Perl `DESTROY()`. Thus,
+we retain those Perl code references as part of the QuickJS context.
+
+Consider the following:
+
+    my $return;
+
+    $js->set_globals(  __return => sub { $return = shift; () } );
+
+    $js->eval('__return( a => a )');
+
+Here $js retains a reference to the `__return` callback. That callback
+refers to `$return`. Once we run `eval()`, Perl $return stores
+_another_ callback, which stores a reference to $js. Here we have a
+circular reference. The way to break it is simply:
+
+    undef $return;
+
+… which is ugly, but it is what it is for now.
+
+Note also that the `__return` callback ends with `()`. Recall that, in
+Perl, a function’s last statement value is the function’s default return
+value. Without the `()`, then, our callback would return `$return`,
+which would create yet _another_ reference cycle.
+
 # CHARACTER ENCODING NOTES
 
 Although QuickJS (like all JS engines) assumes its strings are text,

@@ -765,7 +765,7 @@ call( SV* self_sv, ... )
 
         SV* error = NULL;
 
-        for (uint32_t i=0; i<params_count; i++) {
+        for (int32_t i=0; i<params_count; i++) {
             SV* cur_sv = ST(i+1);
 
             JSValue jsval = _sv_to_jsvalue(aTHX_ pqjs->ctx, cur_sv, &error);
