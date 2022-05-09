@@ -193,7 +193,7 @@ jobs:
         shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
 
   BSDs:
-    runs-on: macos-10.15
+    runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
