@@ -35,7 +35,7 @@ your system.
 
 use XSLoader;
 
-our $VERSION = '0.08';
+our $VERSION = '0.09_01';
 
 XSLoader::load( __PACKAGE__, $VERSION );
 
@@ -113,6 +113,8 @@ This module converts returned values from JavaScript thus:
 
 =item * Functions become Perl code references.
 
+=item * RegExp instances become L<JavaScript::QuickJS::RegExp> instances.
+
 =item * Behaviour is B<UNDEFINED> for other object types.
 
 =back
@@ -139,6 +141,9 @@ primitives.
 =item * L<Types::Serialiser> booleans become JavaScript booleans.
 
 =item * Perl code references become JavaScript functions.
+
+=item * L<JavaScript::QuickJS::RegExp> instances become their original
+JavaScript C<RegExp> instances.
 
 =item * Anything else triggers an exception.
 
