@@ -1,6 +1,6 @@
 Revision history for Perl extension JavaScript::QuickJS:
 
-0.09
+0.09 Thu 12 May 2022
 - Add RegExp compatibility
 
 0.08 Tue 26 Apr 2022
