@@ -87,5 +87,6 @@ t/export_ref.t
 t/js2perl.t
 t/js_func_to_perl.t
 t/module.t
+t/regexp.t
 t/set_globals.t
 t/strict.t
