@@ -78,7 +78,7 @@ This module converts returned values from JavaScript thus:
 - JS objects …
     - Arrays become Perl array references.
     - “Plain” objects become Perl hash references.
-    - Functions become Perl code references.
+    - Function objects become Perl [JavaScript::QuickJS::Function](https://metacpan.org/pod/JavaScript%3A%3AQuickJS%3A%3AFunction) objects.
     - RegExp objects become Perl [JavaScript::QuickJS::RegExp](https://metacpan.org/pod/JavaScript%3A%3AQuickJS%3A%3ARegExp) objects.
     - Behaviour is **UNDEFINED** for other object types.
 
@@ -99,6 +99,8 @@ primitives.
 “plain” objects.
 - [Types::Serialiser](https://metacpan.org/pod/Types%3A%3ASerialiser) booleans become JavaScript booleans.
 - Perl code references become JavaScript functions.
+- [JavaScript::QuickJS::Function](https://metacpan.org/pod/JavaScript%3A%3AQuickJS%3A%3AFunction) objects become their original
+JavaScript `Function` objects.
 - [JavaScript::QuickJS::RegExp](https://metacpan.org/pod/JavaScript%3A%3AQuickJS%3A%3ARegExp) objects become their original
 JavaScript `RegExp` objects.
 - Anything else triggers an exception.

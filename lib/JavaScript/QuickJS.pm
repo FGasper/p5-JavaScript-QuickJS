@@ -111,7 +111,7 @@ This module converts returned values from JavaScript thus:
 
 =item * “Plain” objects become Perl hash references.
 
-=item * Functions become Perl code references.
+=item * Function objects become Perl L<JavaScript::QuickJS::Function> objects.
 
 =item * RegExp objects become Perl L<JavaScript::QuickJS::RegExp> objects.
 
@@ -143,6 +143,9 @@ to prevent your Perl “number” from becoming a JavaScript string. (Even in
 =item * L<Types::Serialiser> booleans become JavaScript booleans.
 
 =item * Perl code references become JavaScript functions.
+
+=item * L<JavaScript::QuickJS::Function> objects become their original
+JavaScript C<Function> objects.
 
 =item * L<JavaScript::QuickJS::RegExp> objects become their original
 JavaScript C<RegExp> objects.
@@ -271,12 +274,5 @@ This library is licensed under the same terms as Perl itself.
 See L<perlartistic>.
 
 =cut
-
-#----------------------------------------------------------------------
-
-sub _wrap_jsfunc {
-    my $jsfunc_obj = $_[0];
-    return sub { $jsfunc_obj->call(@_) };
-}
 
 1;
