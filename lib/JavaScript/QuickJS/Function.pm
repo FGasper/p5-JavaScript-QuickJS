@@ -42,11 +42,9 @@ The following methods return their corresponding JS property:
 
 =over
 
-=item * C<name()>
-
-=item * C<displayName()>
-
 =item * C<length()>
+
+=item * C<name()>
 
 =back
 
