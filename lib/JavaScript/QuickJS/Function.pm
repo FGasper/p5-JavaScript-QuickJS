@@ -56,6 +56,7 @@ sub _as_coderef;
 
 use overload (
     '&{}' => \&_as_coderef,
+    nomethod => \&_give_self,   # xsub
 );
 
 sub _as_coderef {

@@ -338,6 +338,8 @@ static JSValue __do_perl_callback(JSContext *ctx, JSValueConst this_val, int arg
         if (from_perl) {
             JSValue to_js = _sv_to_jsvalue(aTHX_ ctx, from_perl, &error_sv);
 
+            sv_2mortal(from_perl);
+
             if (!error_sv) return to_js;
         }
     }
@@ -919,6 +921,12 @@ DESTROY( SV* self_sv )
 
         _free_jsctx(aTHX_ pqjs->ctx);
 
+SV*
+_give_self( SV* self_sv, ... )
+    CODE:
+        RETVAL = SvREFCNT_inc(self_sv);
+    OUTPUT:
+        RETVAL
 
 SV*
 length( SV* self_sv)

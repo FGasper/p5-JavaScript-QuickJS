@@ -14,13 +14,24 @@ use JavaScript::QuickJS;
 
     my $js = JavaScript::QuickJS->new();
 
-    $js->set_globals(  __return => sub { $return = shift; } );
+    $js->set_globals(  __return => sub { $return = shift } );
+
+    my $ret = $js->eval('__return( a => a );');
 
     isa_ok(
-        $js->eval('__return( a => a )'),
+        $return,
         'JavaScript::QuickJS::Function',
         'eval() of an arrow function',
     );
+
+    like(
+        "$return",
+        qr<JavaScript::QuickJS::Function>,
+        'stringification',
+    );
+
+    undef $return;
+
 }
 
 done_testing;

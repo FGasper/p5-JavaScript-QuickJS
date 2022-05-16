@@ -8,6 +8,7 @@ Revision history for Perl extension JavaScript::QuickJS:
   a blessed object. The benefit here is twofold: 1) It’s easier to avoid
   memory cycles, and 2) Perl can now inspect a JavaScript function
   directly.
+- BUG FIX: Fix leaked scalars returned from Perl callbacks.
 - Add missing regexp test.
 
 0.10 Thu 12 May 2022
