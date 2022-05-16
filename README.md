@@ -111,6 +111,40 @@ If any instance of a class of this distribution is DESTROY()ed at Perl’s
 global destruction, we assume that this is a memory leak, and a warning is
 thrown. To prevent this, avoid circular references.
 
+Callbacks make that tricky. When you give a JavaScript function to Perl,
+that Perl object holds a reference to the QuickJS context. Only once that
+object is `DESTROY()`ed do we release that QuickJS context reference.
+
+Consider the following:
+
+    my $return;
+
+    $js->set_globals(  __return => sub { $return = shift; () } );
+
+    $js->eval('__return( a => a )');
+
+This sets $return to be a [JavaScript::QuickJS::Function](https://metacpan.org/pod/JavaScript%3A%3AQuickJS%3A%3AFunction) instance. That
+object holds a reference to $js. $js also stores `__return()`,
+which is a Perl code reference that closes around $return. Thus, we have
+a reference cycle: $return refers to $js, and $js refers to $return. Those
+two values will thus leak, and you’ll see a warning about it at Perl’s
+global destruction time.
+
+To break the reference cycle, just do:
+
+    undef $return;
+
+… once you’re done with that variable.
+
+You _might_ have thought you could instead do:
+
+    $js->set_globals( __return => undef )
+
+… but that doesn’t work because $js holds a reference to all Perl code
+references it **ever** receives. This is because QuickJS, unlike Perl,
+doesn’t expose object destructors (`DESTROY()` in Perl), so there’s no
+good way to release that reference to the code reference.
+
 # CHARACTER ENCODING NOTES
 
 QuickJS (like all JS engines) assumes its strings are text. Since Perl
