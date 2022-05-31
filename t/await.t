@@ -14,6 +14,8 @@ use JavaScript::QuickJS;
 
 my $js = JavaScript::QuickJS->new();
 
+my $cwd = Cwd::getcwd();
+
 my $dir = File::Temp::tempdir( CLEANUP => 1 );
 chdir $dir or die "chdir($dir): $!";
 
@@ -35,5 +37,7 @@ is($got, undef, 'pre-await(): no returned value');
 $js->await();
 
 is($got, 'BAR', 'await() waited until the jobs are done');
+
+chdir $cwd or warn "chdir($cwd): $!";
 
 done_testing;
