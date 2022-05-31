@@ -827,6 +827,19 @@ eval (SV* self_sv, SV* js_code_sv)
     OUTPUT:
         RETVAL
 
+SV*
+await (SV* self_sv)
+    CODE:
+        perl_qjs_s* pqjs = exs_structref_ptr(self_sv);
+        JSContext *ctx = pqjs->ctx;
+
+        js_std_loop(ctx);
+
+        RETVAL = SvREFCNT_inc(self_sv);
+
+    OUTPUT:
+        RETVAL
+
 # ----------------------------------------------------------------------
 
 MODULE = JavaScript::QuickJS        PACKAGE = JavaScript::QuickJS::RegExp

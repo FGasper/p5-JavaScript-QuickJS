@@ -59,6 +59,13 @@ $JS\_CODE is a _character_ string.
 Runs $JS\_CODE as a module, which enables ES6 module syntax.
 Note that no values can be returned directly in this mode of execution.
 
+## $obj = _OBJ_->await()
+
+Blocks until all of _OBJ_’s pending work (if any) is complete.
+
+For example, if you `eval()` some code that creates a promise, call
+this to wait for that promise to complete.
+
 ## $obj = _OBJ_->set\_module\_base( $PATH )
 
 Sets a base path (a byte string) for ES6 module imports.

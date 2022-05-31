@@ -78,6 +78,13 @@ $JS_CODE is a I<character> string.
 Runs $JS_CODE as a module, which enables ES6 module syntax.
 Note that no values can be returned directly in this mode of execution.
 
+=head2 $obj = I<OBJ>->await()
+
+Blocks until all of I<OBJ>’s pending work (if any) is complete.
+
+For example, if you C<eval()> some code that creates a promise, call
+this to wait for that promise to complete.
+
 =head2 $obj = I<OBJ>->set_module_base( $PATH )
 
 Sets a base path (a byte string) for ES6 module imports.

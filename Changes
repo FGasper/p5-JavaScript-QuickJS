@@ -1,5 +1,8 @@
 Revision history for Perl extension JavaScript::QuickJS:
 
+0.12
+- Add await() so Perl can wait until JS’s pending jobs finish.
+
 0.11 Sun 15 May 2022
 - BREAKING CHANGE: JavaScript Functions converted to Perl now become
   instances of a new class, JavaScript::QuickJS::Function. That class
