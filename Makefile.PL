@@ -22,7 +22,6 @@ my $libpath = File::Spec->catfile('quickjs', 'libquickjs.a');
 # quickjs needs these; pre-5.20 perls didn’t include libpthread:
 my @libs = qw(-lm -ldl -lpthread);
 
-
 if (_need_librt()) {
     push @libs, '-lrt';
 }
@@ -33,7 +32,7 @@ if (!_stdatomic_h_exists()) {
     _avoid_stdatomic_h();
 }
 
-make_libquickjs();
+make_libquickjs_makefile();
 
 # RaspiOS needs this; others may, too:
 if (_should_link_libatomic()) {
@@ -196,11 +195,15 @@ sub _should_link_libatomic {
 
     print "Detecting whether QuickJS requires libatomic …\n";
 
-    my $objpath = File::Spec->catfile( qw( quickjs .obj quickjs.nolto.o ) );
+    my $rel_objpath = File::Spec->catfile( qw( .obj quickjs.nolto.o ) );
+    my $objpath = File::Spec->catfile( 'quickjs', $rel_objpath );
 
     my $needs_libatomic;
 
     eval {
+        print "Compiling core libatomic object file …\n";
+        system $Config{'gmake'}, '-C', 'quickjs', '-f', $PERL_QJS_MAKEFILE_PATH, $rel_objpath;
+        die if $?;
         my $objbin = File::Slurper::read_binary($objpath);
 
         $needs_libatomic = -1 != index($objbin, '__atomic_fetch_sub_');
@@ -255,7 +258,7 @@ sub _avoid_stdatomic_h {
     File::Slurper::write_binary($qjs_libc_path, $quickjs_libc_c);
 }
 
-sub make_libquickjs {
+sub make_libquickjs_makefile {
     my $mfpath = File::Spec->catfile('quickjs', 'Makefile');
 
     open my $rfh, '<', $mfpath or die "open Makefile: $!";

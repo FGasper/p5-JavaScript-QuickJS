@@ -272,14 +272,15 @@ building this library. (Hopefully these will eventually merge into QuickJS.)
 
 =head1 LIBATOMIC
 
-As of this writing, this library fails to load in RaspiOS
-(e.g., Raspberry Pi Zero W) unless it links to libatomic.
-No other platform seems to require this explicit link.
+As of this writing, on RaspiOS this library has to link to libatomic
+in order to avoid runtime linker errors.
 
-To avoid portability issues, this library will I<always> link explicitly
-against libatomic if it is available. If, for some reason, you need to
-forgo that linking, set C<JS_QUICKJS_LINK_LIBATOMIC> in the
-environment to a falsy value.
+To avoid this problem in a portable manner, this library’s F<Makefile.PL>
+tries to detect whether libatomic is necessary and will only link if needed.
+If, for some reason, you need manual control over that linking, set
+C<JS_QUICKJS_LINK_LIBATOMIC> in the environment to 1 or a falsy value.
+
+If you don’t know what any of that means, you can probably ignore it.
 
 =head1 SEE ALSO
 
