@@ -13,7 +13,24 @@ use File::Spec;
 use File::Which;
 use Cwd;
 
-my $GMAKE_PATH = File::Which::which($Config{'gmake'});
+my $GMAKE_PATH = _find_gmake();
+
+sub _find_gmake {
+    my $gmake = File::Which::which($Config{'gmake'});
+
+    if (!$gmake) {
+        my $make = File::Which::which($Config{'make'});
+
+        if ($make) {
+            my $out = `$make --version`;
+            if ($out =~ m<gnu>i) {
+                $gmake = $make;
+            }
+        }
+    }
+
+    return $gmake;
+}
 
 if (!$GMAKE_PATH) {
     die "GNU Make ($Config{'gmake'}) is required.\n";
