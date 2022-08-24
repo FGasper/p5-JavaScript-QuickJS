@@ -54,6 +54,8 @@ jobs:
         run: make
       - name: Run Tests
         run: prove -wlvmb t
+        env:
+            PERL_DL_NONLAZY: 1
 
   linux-specialperls:
     runs-on: ubuntu-latest
@@ -93,6 +95,8 @@ jobs:
         run: make
       - name: Run Tests
         run: prove -wlvmb t
+        env:
+            PERL_DL_NONLAZY: 1
 
   linux-centos7:
     runs-on: ubuntu-latest
@@ -118,6 +122,8 @@ jobs:
         run: make
       - name: Run Tests
         run: prove -wlvmb t
+        env:
+            PERL_DL_NONLAZY: 1
 
   mac:
     runs-on: macOS-latest
@@ -162,7 +168,7 @@ jobs:
       - name: Get the qemu container
         run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
       - name: Run tests on ${{ matrix.platform }}
-        run: docker run --rm --interactive --mount type=bind,source=$(pwd),target=/host ${{ matrix.platform }}/alpine sh -c "apk add curl wget perl perl-dev make gcc libc-dev; cd /host; perl -V; curl -L https://cpanmin.us | perl - --verbose --notest --installdeps --with-configure .; perl Makefile.PL; make; prove -wlvmb t"
+        run: docker run --rm --interactive --mount type=bind,source=$(pwd),target=/host ${{ matrix.platform }}/alpine sh -c "apk add curl wget perl perl-dev make gcc libc-dev; cd /host; perl -V; curl -L https://cpanmin.us | perl - --verbose --notest --installdeps --with-configure .; perl Makefile.PL; make; PERL_DL_NONLAZY=1 prove -wlvmb t"
 
   cygwin:
     runs-on: windows-latest
@@ -226,4 +232,4 @@ jobs:
             curl -L https://cpanmin.us | sudo perl - --notest --installdeps --with-configure --with-develop .
             perl Makefile.PL
             make
-            prove -wlvmb t
+            PERL_DL_NONLAZY=1 prove -wlvmb t
