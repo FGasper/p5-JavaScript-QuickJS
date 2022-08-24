@@ -176,6 +176,8 @@ sub _need_librt {
 }
 
 sub _should_link_libatomic {
+    -e $PERL_QJS_MAKEFILE_PATH or die "Need quickjs makefile!";
+
     my $env_value = $ENV{$ATOMIC_ENV_KEY};
 
     if (defined $env_value) {
