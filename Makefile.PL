@@ -13,6 +13,8 @@ use File::Spec;
 use File::Which;
 use Cwd;
 
+my $ATOMIC_ENV_KEY = 'JS_QUICKJS_LINK_LIBATOMIC';
+
 my $PERL_QJS_MAKEFILE_PATH = File::Spec->catfile( Cwd::getcwd(), 'Makefile.quickjs');
 
 my $libpath = File::Spec->catfile('quickjs', 'libquickjs.a');
@@ -20,10 +22,6 @@ my $libpath = File::Spec->catfile('quickjs', 'libquickjs.a');
 # quickjs needs these; pre-5.20 perls didn’t include libpthread:
 my @libs = qw(-lm -ldl -lpthread);
 
-# RaspiOS needs this:
-if (_can_link_libatomic()) {
-    push @libs, '-latomic';
-}
 
 if (_need_librt()) {
     push @libs, '-lrt';
@@ -36,6 +34,11 @@ if (!_stdatomic_h_exists()) {
 }
 
 make_libquickjs();
+
+# RaspiOS needs this; others may, too:
+if (_should_link_libatomic()) {
+    push @libs, '-latomic';
+}
 
 WriteMakefile(
     NAME              => 'JavaScript::QuickJS',
@@ -173,21 +176,44 @@ sub _need_librt {
     return $_cached_need_librt = $ok;
 }
 
-sub _can_link_libatomic {
-    my $dir = File::Temp::tempdir( CLEANUP => 1 );
-    open my $fh, '>', "$dir/test.c";
-    syswrite $fh, join(
-        "\n",
-        'int main() { return 0; }',
-    );
+sub _should_link_libatomic {
+    my $env_value = $ENV{$ATOMIC_ENV_KEY};
 
-    print "Checking whether this system can link libatomic …\n";
+    if (defined $env_value) {
+        if ($env_value) {
+            if ($env_value ne '1') {
+                die "Set $ATOMIC_ENV_KEY to 1 or a falsy value.\n";
+            }
 
-    my $ok = !system $Config{'cc'}, "$dir/test.c", '-latomic';
+            print "You’ve forcibly enabled linking against libatomic.\n";
+            return 1;
+        }
+        else {
+            print "You’ve forcibly disabled linking against libatomic.\n";
+            return 0;
+        }
+    }
 
-    print "\t… " . ($ok ? 'Looks like it.' : 'Guess not.') . "\n";
+    print "Detecting whether QuickJS requires libatomic …\n";
 
-    return $ok;
+    my $objpath = File::Spec->catfile( qw( quickjs .obj quickjs.nolto.o ) );
+
+    my $needs_libatomic;
+
+    eval {
+        my $objbin = File::Slurper::read_binary($objpath);
+
+        $needs_libatomic = -1 != index($objbin, '__atomic_fetch_sub_');
+    };
+
+    if ($@) {
+        print "\tFailed to detect (assuming no): $@";
+    }
+    else {
+        print "\t… " . ($needs_libatomic ? 'Looks like it.' : 'Guess not.') . "\n";
+    }
+
+    return $needs_libatomic;
 }
 
 sub _stdatomic_h_exists {

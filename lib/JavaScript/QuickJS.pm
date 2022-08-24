@@ -270,6 +270,17 @@ QuickJS supports Linux & macOS natively, so these work without issue.
 FreeBSD, OpenBSD, & Cygwin work after a few patches that we apply when
 building this library. (Hopefully these will eventually merge into QuickJS.)
 
+=head1 LIBATOMIC
+
+As of this writing, this library fails to load in RaspiOS
+(e.g., Raspberry Pi Zero W) unless it links to libatomic.
+No other platform seems to require this explicit link.
+
+To avoid portability issues, this library will I<always> link explicitly
+against libatomic if it is available. If, for some reason, you need to
+forgo that linking, set C<JS_QUICKJS_LINK_LIBATOMIC> in the
+environment to a falsy value.
+
 =head1 SEE ALSO
 
 Other JavaScript modules on CPAN include:
