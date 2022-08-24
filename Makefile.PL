@@ -92,6 +92,8 @@ WriteMakefile(
 
 #----------------------------------------------------------------------
 
+# CPAN offers Alien::gmake, but there’s a significant dependency tree
+# involved there.
 sub _find_gmake {
     my $gmake;
 
