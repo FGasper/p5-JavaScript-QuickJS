@@ -227,7 +227,7 @@ sub _should_link_libatomic {
         }
     }
 
-    print "Detecting whether QuickJS requires libatomic …\n";
+    print "Does QuickJS need -latomic? (compiling core object file) …\n";
 
     my $rel_objpath = File::Spec->catfile( qw( .obj quickjs.nolto.o ) );
     my $objpath = File::Spec->catfile( 'quickjs', $rel_objpath );
@@ -235,7 +235,6 @@ sub _should_link_libatomic {
     my $needs_libatomic;
 
     eval {
-        print "Compiling core libatomic object file …\n";
         system $GMAKE_PATH, '-C', 'quickjs', '-f', $PERL_QJS_MAKEFILE_PATH, $rel_objpath;
         die if $?;
         my $objbin = File::Slurper::read_binary($objpath);
