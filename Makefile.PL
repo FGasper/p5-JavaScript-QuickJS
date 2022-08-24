@@ -13,6 +13,19 @@ use File::Spec;
 use File::Which;
 use Cwd;
 
+my $GMAKE_PATH = File::Which::which($Config{'gmake'});
+
+if (!$GMAKE_PATH) {
+    die "GNU Make ($Config{'gmake'}) is required.\n";
+}
+elsif (!-x $GMAKE_PATH) {
+    if ($!) {
+        die "Failed to detect if GNU Make ($GMAKE_PATH) is executable: $!\n";
+    }
+
+    die "GNU Make ($GMAKE_PATH) is not executable.\n";
+}
+
 my $ATOMIC_ENV_KEY = 'JS_QUICKJS_LINK_LIBATOMIC';
 
 my $PERL_QJS_MAKEFILE_PATH = File::Spec->catfile( Cwd::getcwd(), 'Makefile.quickjs');
@@ -204,7 +217,7 @@ sub _should_link_libatomic {
 
     eval {
         print "Compiling core libatomic object file …\n";
-        system $Config{'gmake'}, '-C', 'quickjs', '-f', $PERL_QJS_MAKEFILE_PATH, $rel_objpath;
+        system $GMAKE_PATH, '-C', 'quickjs', '-f', $PERL_QJS_MAKEFILE_PATH, $rel_objpath;
         die if $?;
         my $objbin = File::Slurper::read_binary($objpath);
 
@@ -292,20 +305,12 @@ package MY;
 
 use Config;
 
-sub _gmake_path {
-
-    # QuickJS requires GNU make.
-    return ( ($^O =~ m<bsd>i) ? $Config{'gmake'} : '$(MAKE)' );
-}
-
 sub postamble {
-    my $gmake_path = _gmake_path();
-
     return <<"MAKE_FRAG"
 
 .PHONY:
 build-quickjs:
-\t$gmake_path -C quickjs -f '$PERL_QJS_MAKEFILE_PATH' libquickjs.a
+\t$GMAKE_PATH -C quickjs -f '$PERL_QJS_MAKEFILE_PATH' libquickjs.a
 MAKE_FRAG
 }
 
