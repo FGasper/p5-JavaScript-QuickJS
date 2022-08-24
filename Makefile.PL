@@ -15,21 +15,6 @@ use Cwd;
 
 my $GMAKE_PATH = _find_gmake();
 
-sub _find_gmake {
-    my $gmake;
-
-    if (my $make = File::Which::which($Config{'make'})) {
-        my $out = `$make --version`;
-        if ($out =~ m<gnu>i) {
-            $gmake = $make;
-        }
-    }
-
-    $gmake ||= File::Which::which($Config{'gmake'});
-
-    return $gmake;
-}
-
 if (!$GMAKE_PATH) {
     die "GNU Make ($Config{'gmake'}) is required.\n";
 }
@@ -104,6 +89,23 @@ WriteMakefile(
         },
     },
 );
+
+#----------------------------------------------------------------------
+
+sub _find_gmake {
+    my $gmake;
+
+    if (my $make = File::Which::which($Config{'make'})) {
+        my $out = `$make --version`;
+        if ($out =~ m<gnu>i) {
+            $gmake = $make;
+        }
+    }
+
+    $gmake ||= File::Which::which($Config{'gmake'});
+
+    return $gmake;
+}
 
 sub _tweak_for_os {
     my %bsd_fix = (
