@@ -16,18 +16,16 @@ use Cwd;
 my $GMAKE_PATH = _find_gmake();
 
 sub _find_gmake {
-    my $gmake = File::Which::which($Config{'gmake'});
+    my $gmake;
 
-    if (!$gmake) {
-        my $make = File::Which::which($Config{'make'});
-
-        if ($make) {
-            my $out = `$make --version`;
-            if ($out =~ m<gnu>i) {
-                $gmake = $make;
-            }
+    if (my $make = File::Which::which($Config{'make'})) {
+        my $out = `$make --version`;
+        if ($out =~ m<gnu>i) {
+            $gmake = $make;
         }
     }
+
+    $gmake ||= File::Which::which($Config{'gmake'});
 
     return $gmake;
 }
