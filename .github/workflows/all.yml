@@ -159,6 +159,7 @@ jobs:
           - i386
           - arm32v6
           - arm32v7
+          - arm64v8
           - s390x
 
     steps:
