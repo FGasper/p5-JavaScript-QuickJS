@@ -175,7 +175,7 @@ sub _tweak_for_os {
         }
     }
     else {
-        print "No tweaks for $^O are available. Hopefully none are needed!$/";
+        print "No tweaks for this OS ($^O) are available. Hopefully none are needed!$/";
     }
 }
 
