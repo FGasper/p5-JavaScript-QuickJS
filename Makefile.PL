@@ -326,21 +326,9 @@ use Config;
 sub postamble {
     return <<"MAKE_FRAG"
 
-.PHONY:
-build-quickjs:
+quickjs/libquickjs.a:
 \t$GMAKE_PATH -C quickjs -f '$PERL_QJS_MAKEFILE_PATH' libquickjs.a
 MAKE_FRAG
 }
 
-my $orig_top_targets;
-BEGIN {
-$orig_top_targets = __PACKAGE__->can('top_targets');
-}
-
-sub top_targets {
-    my $out = $orig_top_targets->(@_);
-
-    $out =~ s<^(all\s*:+s*)><$1 build-quickjs >;
-
-    return $out;
-}
+1;
