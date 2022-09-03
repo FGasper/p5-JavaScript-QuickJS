@@ -92,7 +92,7 @@ jobs:
       - name: perl Makefile.PL
         run: perl Makefile.PL
       - name: make
-        run: make
+        run: make -j3 -j3
       - name: Run Tests
         run: prove -wlvmb t
         env:
