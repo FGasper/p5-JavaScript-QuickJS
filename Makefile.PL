@@ -324,10 +324,15 @@ package MY;
 use Config;
 
 sub postamble {
+
+    # QuickJS requires GNU make.
+    my $make = ($^O =~ m<bsd>i) ? $GMAKE_PATH : '$(MAKE)';
+
+    # The leading “+” is to ensure that parallel builds work properly.
     return <<"MAKE_FRAG"
 
 quickjs/libquickjs.a:
-\t$GMAKE_PATH -C quickjs -f '$PERL_QJS_MAKEFILE_PATH' libquickjs.a
+\t+$make -C quickjs -f '$PERL_QJS_MAKEFILE_PATH' libquickjs.a
 MAKE_FRAG
 }
 
