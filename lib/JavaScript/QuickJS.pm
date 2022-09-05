@@ -179,7 +179,8 @@ JavaScript C<RegExp> objects.
 
 If any instance of a class of this distribution is DESTROY()ed at Perl’s
 global destruction, we assume that this is a memory leak, and a warning is
-thrown. To prevent this, avoid circular references.
+thrown. To avoid this warning, make sure you hold all instances in a lexical
+variable, i.e. using C<my>. Also, avoid circular references.
 
 Callbacks make that tricky. When you give a JavaScript function to Perl,
 that Perl object holds a reference to the QuickJS context. Only once that
