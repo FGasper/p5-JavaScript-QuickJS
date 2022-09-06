@@ -24,9 +24,22 @@ your system.
 
 # METHODS
 
-## $obj = _CLASS_->new()
+## $obj = _CLASS_->new( %CONFIG\_OPTS )
 
-Instantiates _CLASS_.
+Instantiates _CLASS_. %CONFIG\_OPTS have the same effect as in
+`configure()` below.
+
+## $obj = _OBJ_->configure( %OPTS )
+
+Tunes the QuickJS interpreter. Returns _OBJ_.
+
+%OPTS are any of:
+
+- `max_stack_size`
+- `memory_limit`
+- `gc_threshold`
+
+For more information on these, see QuickJS itself.
 
 ## $obj = _OBJ_->set\_globals( NAME1 => VALUE1, .. )
 
