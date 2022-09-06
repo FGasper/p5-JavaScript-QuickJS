@@ -35,7 +35,7 @@ your system.
 
 use XSLoader;
 
-our $VERSION = '0.14';
+our $VERSION = '0.14_90';
 
 XSLoader::load( __PACKAGE__, $VERSION );
 
@@ -43,9 +43,54 @@ XSLoader::load( __PACKAGE__, $VERSION );
 
 =head1 METHODS
 
-=head2 $obj = I<CLASS>->new()
+=head2 $obj = I<CLASS>->new( %CONFIG_OPTS )
 
-Instantiates I<CLASS>.
+Instantiates I<CLASS>. %CONFIG_OPTS have the same effect as in
+C<configure()> below.
+
+=cut
+
+sub new {
+    my ($class, %opts) = @_;
+
+    my $self = $class->_new();
+
+    return %opts ? $self->configure(%opts) : $self;
+}
+
+=head2 $obj = I<OBJ>->configure( %OPTS )
+
+Tunes the QuickJS interpreter. Returns I<OBJ>.
+
+%OPTS are any of:
+
+=over
+
+=item * C<max_stack_size>
+
+=item * C<memory_limit>
+
+=item * C<gc_threshold>
+
+=back
+
+For more information on these, see QuickJS itself.
+
+=cut
+
+sub configure {
+    my ($self, %opts) = @_;
+
+    my ($stack, $memlimit, $gc_threshold) = delete @opts{'max_stack_size', 'memory_limit', 'gc_threshold'};
+
+    if (my @extra = sort keys %opts) {
+        Carp::croak("Unknown: @extra");
+    }
+
+    return $self->_configure($stack, $memlimit, $gc_threshold);
+}
+
+#----------------------------------------------------------------------
 
 =head2 $obj = I<OBJ>->set_globals( NAME1 => VALUE1, .. )
 

@@ -1,5 +1,10 @@
 Revision history for Perl extension JavaScript::QuickJS:
 
+0.15
+- QuickJS memory-management parameters are now configurable.
+- Docs improvement for memory-leak notifications. (Thank you, perlancar!)
+- QuickJS runtime info is now set to the module name. (Debugging aid.)
+
 0.14 Sun 4 Sep 2022
 - Fix parallel build errors. (Thank you, CPAN Testers!)
 

@@ -639,7 +639,7 @@ MODULE = JavaScript::QuickJS        PACKAGE = JavaScript::QuickJS
 PROTOTYPES: DISABLE
 
 SV*
-new (SV* classname_sv)
+_new (SV* classname_sv)
     CODE:
         JSRuntime *rt = JS_NewRuntime();
         JS_SetHostPromiseRejectionTracker(rt, js_std_promise_rejection_tracker, NULL);
@@ -662,6 +662,8 @@ new (SV* classname_sv)
             &pqjs->module_base_path
         );
 
+        JS_SetRuntimeInfo(rt, PERL_NS_ROOT);
+
     OUTPUT:
         RETVAL
 
@@ -677,6 +679,30 @@ DESTROY (SV* self_sv)
         if (pqjs->module_base_path) Safefree(pqjs->module_base_path);
 
         _free_jsctx(aTHX_ pqjs->ctx);
+
+SV*
+_configure (SV* self_sv, SV* max_stack_size_sv, SV* memory_limit_sv, SV* gc_threshold_sv)
+    CODE:
+        perl_qjs_s* pqjs = exs_structref_ptr(self_sv);
+
+        JSRuntime *rt = JS_GetRuntime(pqjs->ctx);
+
+        if (SvOK(max_stack_size_sv)) {
+            JS_SetMaxStackSize(rt, exs_SvUV(max_stack_size_sv));
+        }
+
+        if (SvOK(memory_limit_sv)) {
+            JS_SetMemoryLimit(rt, exs_SvUV(memory_limit_sv));
+        }
+
+        if (SvOK(gc_threshold_sv)) {
+            JS_SetGCThreshold(rt, exs_SvUV(gc_threshold_sv));
+        }
+
+        RETVAL = SvREFCNT_inc(self_sv);
+
+    OUTPUT:
+        RETVAL
 
 SV*
 std (SV* self_sv)
