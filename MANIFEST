@@ -86,6 +86,7 @@ t/basic.t
 t/callback_err.t
 t/callback_invalid_sv.t
 t/export_ref.t
+t/import_std.t
 t/js2perl.t
 t/js_func_to_perl.t
 t/jsfunc_memory_handling.t

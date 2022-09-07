@@ -18,6 +18,18 @@ Quick and dirty …
         [ "The", "last", "value", "is", "returned." ];
     > );
 
+… or, something a bit fancier:
+
+    my $js = JavaScript::QuickJS->new()->std()->helpers();
+
+    $js->eval_module( q/
+        import * as std from 'std';
+
+        for (const [key, value] of Object.entries(std.getenviron())) {
+            console.log(key, value);
+        }
+    / );
+
 =head1 DESCRIPTION
 
 This library embeds Fabrice Bellard’s L<QuickJS|https://bellard.org/quickjs>
@@ -108,6 +120,7 @@ Returns I<OBJ>.
 =head2 $obj = I<OBJ>->std()
 
 Enables (but does I<not> import) QuickJS’s C<std> module.
+See L</SYNOPSIS> above for example usage.
 
 Returns I<OBJ>.
 
