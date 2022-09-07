@@ -363,4 +363,18 @@ under the L<MIT license|https://opensource.org/licenses/MIT>.
 
 =cut
 
+#----------------------------------------------------------------------
+
+package JavaScript::QuickJS::JSObject;
+
+package JavaScript::QuickJS::RegExp;
+
+our @ISA;
+BEGIN { @ISA = 'JavaScript::QuickJS::JSObject' };
+
+package JavaScript::QuickJS::Function;
+
+our @ISA;
+BEGIN { @ISA = 'JavaScript::QuickJS::JSObject' };
+
 1;
