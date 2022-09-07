@@ -39,6 +39,10 @@ if (_need_librt()) {
     push @libs, '-lrt';
 }
 
+if (!_has_int128()) {
+    _force_32_bit_bigfloat();
+}
+
 _tweak_for_os();
 
 if (!_stdatomic_h_exists()) {
@@ -185,10 +189,9 @@ my $_cached_need_librt;
 sub _need_librt {
     return $_cached_need_librt if defined $_cached_need_librt;
 
-    my $dir = File::Temp::tempdir( CLEANUP => 1 );
-    open my $fh, '>', "$dir/test.c";
-    syswrite $fh, join(
-        "\n",
+    print "Checking whether this system needs to link to librt …\n";
+
+    my $ok = _does_this_compile(
         '#include <stdlib.h>',
         '#ifdef __GLIBC__',
         '#  if __GLIBC__ < 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 17)',
@@ -198,13 +201,38 @@ sub _need_librt {
         'int main() { return 0; }',
     );
 
-    print "Checking whether this system needs to link to librt …\n";
+    print "\t… " . ($ok ? 'Guess not.' : 'Looks like it.') . "\n";
 
-    my $ok = !!system $Config{'cc'}, "$dir/test.c";
+    return $_cached_need_librt = !$ok;
+}
+
+sub _has_int128 {
+    print "Checking whether $Config{'cc'} implements __int128 …\n";
+
+    my $ok = _does_this_compile(
+        '#include <stddef.h>',
+        '#include <stdint.h>',
+        'int main() { __int128 foo = 1; return 0; }',
+    );
 
     print "\t… " . ($ok ? 'Looks like it.' : 'Guess not.') . "\n";
 
-    return $_cached_need_librt = $ok;
+    return $ok;
+}
+
+sub _does_this_compile {
+    my (@lines_of_c) = @_;
+
+    my $dir = File::Temp::tempdir( CLEANUP => 1 );
+
+    my $path = File::Spec->catfile( $dir, 'test.c' );
+
+    {
+        open my $fh, '>', $path or die "open($dir/test.c): $!";
+        syswrite $fh, join("\n", @lines_of_c, q<>);
+    }
+
+    return 0 == system $Config{'cc'}, $path;
 }
 
 sub _should_link_libatomic {
@@ -291,6 +319,20 @@ sub _avoid_stdatomic_h {
     File::Slurper::write_binary($qjs_libc_path, $quickjs_libc_c);
 }
 
+sub _force_32_bit_bigfloat {
+    print "Tweaking QuickJS to use 32-bit BigFloat …\n";
+
+    my $c_path = File::Spec->catfile( qw( quickjs libbf.h ) );
+
+    my $c = File::Slurper::read_binary($c_path);
+
+    $c =~ s<^(#define\s+LIMB_LOG2_BITS).+$><$1 5  /* 32-bit only - J::QJS */>m or do {
+        warn "Did no replace for LIMB_LOG2_BITS?\n";
+    };
+
+    File::Slurper::write_binary($c_path, $c);
+}
+
 sub make_libquickjs_makefile {
     my $mfpath = File::Spec->catfile('quickjs', 'Makefile');
 
@@ -308,9 +350,13 @@ sub make_libquickjs_makefile {
     # assume we need these other omissions as well:
     #
     if (_need_librt()) {
-        $make =~ s<^(.*no-format-truncation)><#$1 -- J::QJS>m;
-        $make =~ s<^(CONFIG_BIGNUM)><#$1 -- J::QJS>m;
-        $make =~ s<^(CONFIG_LTO)><#$1 -- J::QJS>m;
+        $make =~ s<^(.*no-format-truncation)><#$1 -- J::QJS>m or do {
+            warn "No no-format-truncation to hide?\n";
+        };
+
+        $make =~ s<^(CONFIG_LTO)><#$1 -- J::QJS>m or do {
+            warn "No CONFIG_LTO to hide?\n";
+        };
     }
 
     open my $fh, '>', $PERL_QJS_MAKEFILE_PATH or die "open($PERL_QJS_MAKEFILE_PATH): $!";
