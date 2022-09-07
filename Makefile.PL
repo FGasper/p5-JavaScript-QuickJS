@@ -39,10 +39,6 @@ if (_need_librt()) {
     push @libs, '-lrt';
 }
 
-if (!_has_int128()) {
-    _force_32_bit_bigfloat();
-}
-
 _tweak_for_os();
 
 if (!_stdatomic_h_exists()) {
@@ -206,20 +202,6 @@ sub _need_librt {
     return $_cached_need_librt = !$ok;
 }
 
-sub _has_int128 {
-    print "Checking whether $Config{'cc'} implements __int128 …\n";
-
-    my $ok = _does_this_compile(
-        '#include <stddef.h>',
-        '#include <stdint.h>',
-        'int main() { __int128 foo = 1; return 0; }',
-    );
-
-    print "\t… " . ($ok ? 'Looks like it.' : 'Guess not.') . "\n";
-
-    return $ok;
-}
-
 sub _does_this_compile {
     my (@lines_of_c) = @_;
 
@@ -317,20 +299,6 @@ sub _avoid_stdatomic_h {
         warn "Did no replace for quickjs-libc.c?\n";
     };
     File::Slurper::write_binary($qjs_libc_path, $quickjs_libc_c);
-}
-
-sub _force_32_bit_bigfloat {
-    print "Tweaking QuickJS to use 32-bit BigFloat …\n";
-
-    my $c_path = File::Spec->catfile( qw( quickjs libbf.h ) );
-
-    my $c = File::Slurper::read_binary($c_path);
-
-    $c =~ s<^(#define\s+LIMB_LOG2_BITS).+$><$1 5  /* 32-bit only - J::QJS */>m or do {
-        warn "Did no replace for LIMB_LOG2_BITS?\n";
-    };
-
-    File::Slurper::write_binary($c_path, $c);
 }
 
 sub make_libquickjs_makefile {
