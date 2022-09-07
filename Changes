@@ -2,6 +2,7 @@ Revision history for Perl extension JavaScript::QuickJS:
 
 0.15
 - QuickJS memory-management parameters are now configurable.
+- Compilers that don’t implement int128 now have BigInt et al.
 - Docs improvement for memory-leak notifications. (Thank you, perlancar!)
 - QuickJS runtime info is now set to the module name. (Debugging aid.)
 
