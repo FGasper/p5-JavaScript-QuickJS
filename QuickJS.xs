@@ -958,16 +958,21 @@ setTime (SV* self_sv, SV* num_sv)
         setUTCFullYear = 14
 
     CODE:
-        UV num_uv = exs_SvUV(num_sv);
-        if (num_uv > UINT32_MAX) {
-            croak("Argument (%" UVuf ") is too high!", num_uv);
+        const char* setter_name = DATE_SETTER_FROM_IX[ix];
+
+        IV num_iv = SvIV(num_sv);
+        if (num_iv > INT32_MAX) {
+            croak("%s: Argument (%" IVdf ") is too high!", setter_name, num_iv);
+        }
+        if (num_iv < INT32_MIN) {
+            croak("%s: Argument (%" IVdf ") is too low!", setter_name, num_iv);
         }
 
         perl_qjs_jsobj_s* pqjs = exs_structref_ptr(self_sv);
         JSContext *ctx = pqjs->ctx;
 
-        JSAtom prop = JS_NewAtom(ctx, DATE_SETTER_FROM_IX[ix]);
-        JSValue arg = JS_NewUint32(ctx, num_uv);
+        JSAtom prop = JS_NewAtom(ctx, setter_name);
+        JSValue arg = JS_NewInt32(ctx, num_iv);
 
         JSValue jsret = JS_Invoke(
             ctx,
@@ -980,13 +985,7 @@ setTime (SV* self_sv, SV* num_sv)
         JS_FreeAtom(ctx, prop);
         JS_FreeValue(ctx, arg);
 
-        if (JS_IsException(jsret)) {
-            _return_jsvalue_or_croak(aTHX_ pqjs->ctx, jsret);
-        }
-
-        JS_FreeValue(ctx, jsret);
-
-        RETVAL = SvREFCNT_inc(self_sv);
+        RETVAL = _return_jsvalue_or_croak(aTHX_ pqjs->ctx, jsret);
 
     OUTPUT:
         RETVAL
