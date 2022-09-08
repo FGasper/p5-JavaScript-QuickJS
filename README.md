@@ -125,8 +125,9 @@ This module converts returned values from JavaScript thus:
 - JS objects …
     - Arrays become Perl array references.
     - “Plain” objects become Perl hash references.
-    - Function objects become Perl [JavaScript::QuickJS::Function](https://metacpan.org/pod/JavaScript%3A%3AQuickJS%3A%3AFunction) objects.
-    - RegExp objects become Perl [JavaScript::QuickJS::RegExp](https://metacpan.org/pod/JavaScript%3A%3AQuickJS%3A%3ARegExp) objects.
+    - Function, RegExp, and Date objects become Perl
+    [JavaScript::QuickJS::Function](https://metacpan.org/pod/JavaScript%3A%3AQuickJS%3A%3AFunction), [JavaScript::QuickJS::RegExp](https://metacpan.org/pod/JavaScript%3A%3AQuickJS%3A%3ARegExp),
+    and [JavaScript::QuickJS::Date](https://metacpan.org/pod/JavaScript%3A%3AQuickJS%3A%3ADate) objects, respectively.
     - Behaviour is **UNDEFINED** for other object types.
 
 # TYPE CONVERSION: PERL → JAVASCRIPT

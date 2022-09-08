@@ -190,9 +190,9 @@ This module converts returned values from JavaScript thus:
 
 =item * “Plain” objects become Perl hash references.
 
-=item * Function objects become Perl L<JavaScript::QuickJS::Function> objects.
-
-=item * RegExp objects become Perl L<JavaScript::QuickJS::RegExp> objects.
+=item * Function, RegExp, and Date objects become Perl
+L<JavaScript::QuickJS::Function>, L<JavaScript::QuickJS::RegExp>,
+and L<JavaScript::QuickJS::Date> objects, respectively.
 
 =item * Behaviour is B<UNDEFINED> for other object types.
 

@@ -9,7 +9,8 @@
 
 #define PQJS_JSOBJECT_CLASS PERL_NS_ROOT "::JSObject"
 #define PQJS_FUNCTION_CLASS PERL_NS_ROOT "::Function"
-#define PQJS_REGEXP_CLASS PERL_NS_ROOT "::RegExp"
+#define PQJS_REGEXP_CLASS   PERL_NS_ROOT "::RegExp"
+#define PQJS_DATE_CLASS     PERL_NS_ROOT "::Date"
 
 typedef struct {
     JSContext *ctx;
@@ -31,6 +32,7 @@ typedef struct {
     U32 svs_count;
     U32 refcount;
     JSValue regexp_jsvalue;
+    JSValue date_jsvalue;
 } ctx_opaque_s;
 
 const char* __jstype_name_back[] = {
@@ -46,6 +48,55 @@ const char* __jstype_name_back[] = {
     [99] = NULL,
 };
 
+const char* const DATE_GETTER_FROM_IX[] = {
+    "toString",
+    "toUTCString",
+    "toGMTString",
+    "toISOString",
+    "toDateString",
+    "toTimeString",
+    "toLocaleString",
+    "toLocaleDateString",
+    "toLocaleTimeString",
+    "getTimezoneOffset",
+    "getTime",
+    "getFullYear",
+    "getUTCFullYear",
+    "getMonth",
+    "getUTCMonth",
+    "getDate",
+    "getUTCDate",
+    "getHours",
+    "getUTCHours",
+    "getMinutes",
+    "getUTCMinutes",
+    "getSeconds",
+    "getUTCSeconds",
+    "getMilliseconds",
+    "getUTCMilliseconds",
+    "getDay",
+    "getUTCDay",
+    "toJSON",
+};
+
+const char* const DATE_SETTER_FROM_IX[] = {
+    "setTime",
+    "setMilliseconds",
+    "setUTCMilliseconds",
+    "setSeconds",
+    "setUTCSeconds",
+    "setMinutes",
+    "setUTCMinutes",
+    "setHours",
+    "setUTCHours",
+    "setDate",
+    "setUTCDate",
+    "setMonth",
+    "setUTCMonth",
+    "setFullYear",
+    "setUTCFullYear",
+};
+
 #if defined _WIN32 || defined __CYGWIN__
 #   define PATH_SEPARATOR '\\'
 #else
@@ -56,10 +107,10 @@ const char* __jstype_name_back[] = {
 
 static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp);
 
-static inline SV* _JSValue_regexp_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp) {
+static inline SV* _JSValue_special_object_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp, const char* class) {
     assert(!*err_svp);
 
-    SV* sv = exs_new_structref(perl_qjs_jsobj_s, PQJS_REGEXP_CLASS);
+    SV* sv = exs_new_structref(perl_qjs_jsobj_s, class);
     perl_qjs_jsobj_s* pqjs = exs_structref_ptr(sv);
 
     *pqjs = (perl_qjs_jsobj_s) {
@@ -215,14 +266,11 @@ static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp) {
 
                 ctx_opaque_s* ctxdata = JS_GetContextOpaque(ctx);
 
-                bool is_regexp = JS_IsInstanceOf(
-                    ctx,
-                    jsval,
-                    ctxdata->regexp_jsvalue
-                );
-
-                if (is_regexp) {
-                    RETVAL = _JSValue_regexp_to_SV(aTHX_ ctx, jsval, err_svp);
+                if (JS_IsInstanceOf(ctx, jsval, ctxdata->regexp_jsvalue)) {
+                    RETVAL = _JSValue_special_object_to_SV(aTHX_ ctx, jsval, err_svp, PQJS_REGEXP_CLASS);
+                }
+                else if (JS_IsInstanceOf(ctx, jsval, ctxdata->date_jsvalue)) {
+                    RETVAL = _JSValue_special_object_to_SV(aTHX_ ctx, jsval, err_svp, PQJS_DATE_CLASS);
                 }
                 else {
                     RETVAL = _JSValue_object_to_SV(aTHX_ ctx, jsval, err_svp);
@@ -501,6 +549,7 @@ static JSContext* _create_new_jsctx( pTHX_ JSRuntime *rt ) {
     *ctxdata = (ctx_opaque_s) {
         .refcount = 1,
         .regexp_jsvalue = JS_GetPropertyStr(ctx, global, "RegExp"),
+        .date_jsvalue = JS_GetPropertyStr(ctx, global, "Date"),
 #ifdef MULTIPLICITY
         .aTHX = aTHX,
 #endif
@@ -554,6 +603,7 @@ static void _free_jsctx(pTHX_ JSContext* ctx) {
 
     if (--ctxdata->refcount == 0) {
         JS_FreeValue(ctx, ctxdata->regexp_jsvalue);
+        JS_FreeValue(ctx, ctxdata->date_jsvalue);
 
         JSRuntime *rt = JS_GetRuntime(ctx);
 
@@ -616,6 +666,26 @@ static const char* _FUNCTION_ACCESSORS[] = {
 };
 
 #define FUNC_CALL_INITIAL_ARGS 2
+
+void _svs_to_jsvars(pTHX_ JSContext* jsctx, int32_t params_count, SV** svs, JSValue* jsvars) {
+    SV* error = NULL;
+
+    for (int32_t i=0; i<params_count; i++) {
+        SV* cur_sv = svs[i];
+
+        JSValue jsval = _sv_to_jsvalue(aTHX_ jsctx, cur_sv, &error);
+
+        if (error) {
+            while (--i >= 0) {
+                JS_FreeValue(jsctx, jsvars[i]);
+            }
+
+            croak_sv(error);
+        }
+
+        jsvars[i] = jsval;
+    }
+}
 
 /* ---------------------------------------------------------------------- */
 
@@ -867,6 +937,136 @@ await (SV* self_sv)
 
 # ----------------------------------------------------------------------
 
+MODULE = JavaScript::QuickJS        PACKAGE = JavaScript::QuickJS::Date
+
+SV*
+setTime (SV* self_sv, SV* num_sv)
+    ALIAS:
+        setMilliseconds = 1
+        setUTCMilliseconds = 2
+        setSeconds = 3
+        setUTCSeconds = 4
+        setMinutes = 5
+        setUTCMinutes = 6
+        setHours = 7
+        setUTCHours = 8
+        setDate = 9
+        setUTCDate = 10
+        setMonth = 11
+        setUTCMonth = 12
+        setFullYear = 13
+        setUTCFullYear = 14
+
+    CODE:
+        UV num_uv = exs_SvUV(num_sv);
+        if (num_uv > UINT32_MAX) {
+            croak("Argument (%" UVuf ") is too high!", num_uv);
+        }
+
+        perl_qjs_jsobj_s* pqjs = exs_structref_ptr(self_sv);
+        JSContext *ctx = pqjs->ctx;
+
+        JSAtom prop = JS_NewAtom(ctx, DATE_SETTER_FROM_IX[ix]);
+        JSValue arg = JS_NewUint32(ctx, num_uv);
+
+        JSValue jsret = JS_Invoke(
+            ctx,
+            pqjs->jsobj,
+            prop,
+            1,
+            &arg
+        );
+
+        JS_FreeAtom(ctx, prop);
+        JS_FreeValue(ctx, arg);
+
+        if (JS_IsException(jsret)) {
+            _return_jsvalue_or_croak(aTHX_ pqjs->ctx, jsret);
+        }
+
+        JS_FreeValue(ctx, jsret);
+
+        RETVAL = SvREFCNT_inc(self_sv);
+
+    OUTPUT:
+        RETVAL
+
+SV*
+toString (SV* self_sv, ...)
+    ALIAS:
+        toUTCString = 1
+        toGMTString = 2
+        toISOString = 3
+        toDateString = 4
+        toTimeString = 5
+        toLocaleString = 6
+        toLocaleDateString = 7
+        toLocaleTimeString = 8
+        getTimezoneOffset = 9
+        getTime = 10
+        getFullYear = 11
+        getUTCFullYear = 12
+        getMonth = 13
+        getUTCMonth = 14
+        getDate = 15
+        getUTCDate = 16
+        getHours = 17
+        getUTCHours = 18
+        getMinutes = 19
+        getUTCMinutes = 20
+        getSeconds = 21
+        getUTCSeconds = 22
+        getMilliseconds = 23
+        getUTCMilliseconds = 24
+        getDay = 25
+        getUTCDay = 26
+        toJSON = 27
+    CODE:
+        perl_qjs_jsobj_s* pqjs = exs_structref_ptr(self_sv);
+        JSContext *ctx = pqjs->ctx;
+
+        JSAtom prop = JS_NewAtom(ctx, DATE_GETTER_FROM_IX[ix]);
+
+        JSValue jsret;
+
+        if (items > 1) {
+            int params_count = items - 1;
+
+            JSValue jsargs[params_count];
+
+            _svs_to_jsvars(aTHX_ ctx, params_count, &ST(1), jsargs);
+
+            jsret = JS_Invoke(
+                ctx,
+                pqjs->jsobj,
+                prop,
+                params_count,
+                jsargs
+            );
+
+            for (uint32_t i=0; i<params_count; i++) {
+                JS_FreeValue(ctx, jsargs[i]);
+            }
+        }
+        else {
+            jsret = JS_Invoke(
+                ctx,
+                pqjs->jsobj,
+                prop,
+                0,
+                NULL
+            );
+        }
+
+        JS_FreeAtom(ctx, prop);
+
+        RETVAL = _return_jsvalue_or_croak(aTHX_ pqjs->ctx, jsret);
+
+    OUTPUT:
+        RETVAL
+
+# ----------------------------------------------------------------------
+
 MODULE = JavaScript::QuickJS        PACKAGE = JavaScript::QuickJS::RegExp
 
 SV*
@@ -929,6 +1129,10 @@ flags( SV* self_sv)
     OUTPUT:
         RETVAL
 
+# ----------------------------------------------------------------------
+
+MODULE = JavaScript::QuickJS        PACKAGE = JavaScript::QuickJS::JSObject
+
 void
 DESTROY( SV* self_sv )
     CODE:
@@ -945,19 +1149,6 @@ DESTROY( SV* self_sv )
 # ----------------------------------------------------------------------
 
 MODULE = JavaScript::QuickJS        PACKAGE = JavaScript::QuickJS::Function
-
-void
-DESTROY( SV* self_sv )
-    CODE:
-        perl_qjs_jsobj_s* pqjs = exs_structref_ptr(self_sv);
-
-        if (PL_dirty && pqjs->pid == getpid()) {
-            warn("DESTROYing %" SVf " at global destruction; memory leak likely!\n", self_sv);
-        }
-
-        JS_FreeValue(pqjs->ctx, pqjs->jsobj);
-
-        _free_jsctx(aTHX_ pqjs->ctx);
 
 SV*
 _give_self( SV* self_sv, ... )
@@ -986,7 +1177,6 @@ length( SV* self_sv)
     OUTPUT:
         RETVAL
 
-
 SV*
 call( SV* self_sv, SV* this_sv=&PL_sv_undef, ... )
     CODE:
@@ -1001,21 +1191,7 @@ call( SV* self_sv, SV* this_sv=&PL_sv_undef, ... )
 
         JSValue jsvars[params_count];
 
-        for (int32_t i=0; i<params_count; i++) {
-            SV* cur_sv = ST(i + FUNC_CALL_INITIAL_ARGS);
-
-            JSValue jsval = _sv_to_jsvalue(aTHX_ pqjs->ctx, cur_sv, &error);
-
-            if (error) {
-                while (--i >= 0) {
-                    JS_FreeValue(pqjs->ctx, jsvars[i]);
-                }
-
-                croak_sv(error);
-            }
-
-            jsvars[i] = jsval;
-        }
+        _svs_to_jsvars( aTHX_ pqjs->ctx, params_count, &ST(FUNC_CALL_INITIAL_ARGS), jsvars );
 
         JSValue jsret = JS_Call(pqjs->ctx, pqjs->jsobj, thisjs, params_count, jsvars);
 
