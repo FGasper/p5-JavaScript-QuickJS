@@ -72,16 +72,6 @@ for my $settable (@settables) {
             $date->$getter(),
             "$setter(-$value)",
         );
-
-        my $excess = 1 + $INT32_MAX;
-        my $err = exception { $date->$setter($excess) };
-        like($err, qr<$setter>, "$setter($excess): error mentions method");
-        like($err, qr<$excess>, "$setter($excess): error mentions argument");
-
-        $excess = $INT32_MIN - 1;
-        $err = exception { $date->$setter($excess) };
-        like($err, qr<$setter>, "$setter($excess): error mentions method");
-        like($err, qr<$excess>, "$setter($excess): error mentions argument");
     }
 }
 

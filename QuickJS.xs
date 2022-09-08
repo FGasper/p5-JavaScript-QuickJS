@@ -392,6 +392,14 @@ static JSValue __do_perl_callback(JSContext *ctx, JSValueConst this_val, int arg
     return JS_Throw(ctx, jserr);
 }
 
+static JSValue _sviv_to_js(pTHX_ JSContext* ctx, SV* value) {
+    if (sizeof(IV) == sizeof(int64_t)) {
+        return JS_NewInt64(ctx, (int64_t) SvIV(value));
+    }
+
+    return JS_NewInt32(ctx, (int32_t) SvIV(value));
+}
+
 static JSValue _sv_to_jsvalue(pTHX_ JSContext* ctx, SV* value, SV** error_svp) {
     SvGETMAGIC(value);
 
@@ -426,11 +434,7 @@ static JSValue _sv_to_jsvalue(pTHX_ JSContext* ctx, SV* value, SV** error_svp) {
         } STMT_END;
 
         case EXS_SVTYPE_IV: STMT_START {
-            if (sizeof(IV) == sizeof(int64_t)) {
-                return JS_NewInt64(ctx, (int64_t) SvIV(value));
-            }
-
-            return JS_NewInt32(ctx, (int32_t) SvIV(value));
+            return _sviv_to_js(aTHX_ ctx, value);
         } STMT_END;
 
         case EXS_SVTYPE_NV: STMT_START {
@@ -960,19 +964,11 @@ setTime (SV* self_sv, SV* num_sv)
     CODE:
         const char* setter_name = DATE_SETTER_FROM_IX[ix];
 
-        IV num_iv = SvIV(num_sv);
-        if (num_iv > INT32_MAX) {
-            croak("%s: Argument (%" IVdf ") is too high!", setter_name, num_iv);
-        }
-        if (num_iv < INT32_MIN) {
-            croak("%s: Argument (%" IVdf ") is too low!", setter_name, num_iv);
-        }
-
         perl_qjs_jsobj_s* pqjs = exs_structref_ptr(self_sv);
         JSContext *ctx = pqjs->ctx;
 
         JSAtom prop = JS_NewAtom(ctx, setter_name);
-        JSValue arg = JS_NewInt32(ctx, num_iv);
+        JSValue arg = _sviv_to_js(aTHX_ ctx, num_sv);
 
         JSValue jsret = JS_Invoke(
             ctx,
