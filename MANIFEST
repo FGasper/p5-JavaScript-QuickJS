@@ -86,6 +86,7 @@ t/await.t
 t/basic.t
 t/callback_err.t
 t/callback_invalid_sv.t
+t/date.t
 t/export_ref.t
 t/import_std.t
 t/js2perl.t

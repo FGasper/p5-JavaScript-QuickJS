@@ -75,13 +75,13 @@ for my $settable (@settables) {
 
         my $excess = 1 + $INT32_MAX;
         my $err = exception { $date->$setter($excess) };
-        like($err, qr<$setter>, "$setter(too high): error mentions method");
-        like($err, qr<$excess>, "$setter(too high): error mentions argument");
+        like($err, qr<$setter>, "$setter($excess): error mentions method");
+        like($err, qr<$excess>, "$setter($excess): error mentions argument");
 
         $excess = $INT32_MIN - 1;
         $err = exception { $date->$setter($excess) };
-        like($err, qr<$setter>, "$setter(too low): error mentions method");
-        like($err, qr<$excess>, "$setter(too low): error mentions argument");
+        like($err, qr<$setter>, "$setter($excess): error mentions method");
+        like($err, qr<$excess>, "$setter($excess): error mentions argument");
     }
 }
 
