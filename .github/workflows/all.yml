@@ -183,37 +183,33 @@ jobs:
       - uses: actions/checkout@main
         with:
             submodules: recursive
-      - run: perl -V
-        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
-      - run: cpan -T App::cpanminus
-        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
-      - name: Install Dependencies
-        run: cd $GITHUB_WORKSPACE; cpanm --verbose --notest --installdeps --with-configure --with-develop .
-        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
-      - name: perl Makefile.PL
-        run: cd $GITHUB_WORKSPACE; perl Makefile.PL
-        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
-      - name: make
-        run: cd $GITHUB_WORKSPACE; make -j3 -j3
-        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
-      - name: make test
-        run: cd $GITHUB_WORKSPACE; make test
-        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
+      - shell: C:\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
+        run: |
+            perl -V
+            cpan -T App::cpanminus
+            cd $GITHUB_WORKSPACE;
+            cpanm --verbose --notest --installdeps --with-configure --with-develop .
+            perl Makefile.PL
+            make -j3 -j3 test
 
-# It’s far too slow …
-#  Solaris:
-#    runs-on: macos-12
-#
-#    steps:
-#      - uses: actions/checkout@main
-#        with:
-#          submodules: recursive
-#      - uses: vmactions/solaris-vm@main
-#        with:
-#          prepare: |
-#            pkgutil --yes --install gmake
-#          run: |
-#            perl -V
+# It’s pretty slow, but …
+  Solaris:
+    runs-on: macos-12
+
+    steps:
+      - uses: actions/checkout@main
+        with:
+          submodules: recursive
+      - uses: vmactions/solaris-vm@main
+        with:
+          usesh: true
+          mem: 2048
+          copyback: false
+          prepare: |
+            pkgutil --yes --install gmake
+            pkgutil -a ExtUtils
+          run: |
+            perl -V
 
   BSDs:
     runs-on: macos-10.15
@@ -229,13 +225,7 @@ jobs:
           #   version: '12.2'
           #   pkginstall: pkg install -y gmake p5-ExtUtils-MakeMaker
           - name: openbsd
-            version: '7.0'
-            pkginstall: pkg_add gmake curl p5-ExtUtils-MakeMaker
-          - name: openbsd
             version: '7.1'
-            pkginstall: pkg_add gmake curl p5-ExtUtils-MakeMaker
-          - name: openbsd
-            version: '7.2'
             pkginstall: pkg_add gmake curl p5-ExtUtils-MakeMaker
 
     steps:
