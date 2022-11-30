@@ -191,28 +191,28 @@ jobs:
             perl Makefile.PL
             make -j3 -j3 test
 
-# It’s pretty slow, but …
-  Solaris:
-    runs-on: macos-12
-
-    steps:
-      - uses: actions/checkout@main
-        with:
-          submodules: recursive
-      - uses: vmactions/solaris-vm@main
-        with:
-          usesh: true
-          mem: 2048
-          copyback: false
-          prepare: |
-            pkgutil --yes --install gmake
-          run: |
-            perl -V
-            cpan -T App::cpanminus
-            cpanm --notest --installdeps --with-configure --with-develop .
-            perl Makefile.PL
-            make -j3 -j3
-            PERL_DL_NONLAZY=1 prove -wlvmb t
+# It’s awfully slow, and it sometimes hangs.
+#  Solaris:
+#    runs-on: macos-12
+#
+#    steps:
+#      - uses: actions/checkout@main
+#        with:
+#          submodules: recursive
+#      - uses: vmactions/solaris-vm@main
+#        with:
+#          usesh: true
+#          mem: 2048
+#          copyback: false
+#          prepare: |
+#            pkgutil --yes --install gmake
+#          run: |
+#            perl -V
+#            cpan -T App::cpanminus
+#            cpanm --notest --installdeps --with-configure --with-develop .
+#            perl Makefile.PL
+#            make -j3 -j3
+#            PERL_DL_NONLAZY=1 prove -wlvmb t
 
   BSDs:
     runs-on: macos-10.15
