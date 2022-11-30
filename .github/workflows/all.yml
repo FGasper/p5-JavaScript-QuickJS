@@ -200,6 +200,20 @@ jobs:
         run: cd $GITHUB_WORKSPACE; make test
         shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
 
+  Solaris:
+    runs-on: macos-12
+
+    steps:
+      - uses: actions/checkout@main
+        with:
+          submodules: recursive
+      - uses: vmactions/solaris-vm@main
+        with:
+          prepare: |
+            pkgutil --yes --install gmake
+          run: |
+            perl -V
+
   BSDs:
     runs-on: macos-10.15
 
