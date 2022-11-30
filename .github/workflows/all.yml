@@ -206,7 +206,7 @@ jobs:
           copyback: false
           prepare: |
             pkgutil --yes --install gmake CSWpmstringapprox
-            pkgutil -a ExtUtils
+            pkgutil -a perl
           run: |
             perl -V
 
