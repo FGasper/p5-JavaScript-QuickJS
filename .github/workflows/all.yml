@@ -205,10 +205,14 @@ jobs:
           mem: 2048
           copyback: false
           prepare: |
-            pkgutil --yes --install gmake CSWpmstringapprox
-            pkgutil -a perl
+            pkgutil --yes --install gmake
           run: |
             perl -V
+            cpan -T App::cpanminus
+            cpanm --notest --installdeps --with-configure --with-develop .
+            perl Makefile.PL
+            make -j3 -j3
+            PERL_DL_NONLAZY=1 prove -wlvmb t
 
   BSDs:
     runs-on: macos-10.15
