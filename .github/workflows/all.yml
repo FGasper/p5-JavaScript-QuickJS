@@ -171,6 +171,29 @@ jobs:
       - name: Run tests on ${{ matrix.platform }}
         run: docker run --rm --interactive --mount type=bind,source=$(pwd),target=/host ${{ matrix.platform }}/alpine sh -c "apk add curl wget perl perl-dev make gcc libc-dev; cd /host; perl -V; curl -L https://cpanmin.us | perl - --verbose --notest --installdeps --with-configure .; perl Makefile.PL; make -j3 -j3; PERL_DL_NONLAZY=1 prove -wlvmb t"
 
+  windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@main
+        with:
+            submodules: recursive
+      - name: Set up Perl
+        run: |
+          choco install strawberryperl
+          #echo "##[add-path]C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin"
+          echo 'C:\strawberry\c\bin' >> $GITHUB_PATH
+          echo 'C:\strawberry\perl\site\bin' >> $GITHUB_PATH
+          echo 'C:\strawberry\perl\bin' >> $GITHUB_PATH
+      - name: perl -V
+        run: perl -V
+      - name: Install Dependencies
+        run: curl -L https://cpanmin.us | perl - --notest --installdeps --with-develop --with-configure --verbose .
+      - run: perl Makefile.PL
+      - run: gmake
+      - name: Run Tests
+        run: prove -wlvmb t
+
   cygwin:
     runs-on: windows-latest
 
