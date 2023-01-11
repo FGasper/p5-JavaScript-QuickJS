@@ -49,8 +49,8 @@ if (!_stdatomic_h_exists()) {
 }
 
 # QuickJS’s Makefile uses the mkdir CLI tool to create this directory.
-# The problem is that it expects POSIX’s mkdir, not Windows’s. So let’s
-# pre-create the directory now:
+# The problem is that it expects POSIX’s mkdir, which doesn’t match
+# Windows’s. To avoid that problem we pre-create the directory now:
 #
 mkdir( File::Spec->catdir( qw(quickjs .obj) ) );
 
