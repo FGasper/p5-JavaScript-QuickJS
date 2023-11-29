@@ -31,6 +31,7 @@ typedef struct {
     SV** svs;
     U32 svs_count;
     U32 refcount;
+    bool ran_js_std_init_handlers;
     JSValue regexp_jsvalue;
     JSValue date_jsvalue;
 } ctx_opaque_s;
@@ -615,9 +616,14 @@ static void _free_jsctx(pTHX_ JSContext* ctx) {
             SvREFCNT_dec(ctxdata->svs[i]);
         }
 
+        if (ctxdata->ran_js_std_init_handlers) {
+            js_std_free_handlers(rt);
+        }
+
         Safefree(ctxdata);
 
         JS_FreeContext(ctx);
+
         JS_FreeRuntime(rt);
     }
 }
@@ -777,6 +783,16 @@ std (SV* self_sv)
                 break;
             case 1:
                 js_init_module_os(pqjs->ctx, "os");
+
+                ctx_opaque_s* ctxdata = JS_GetContextOpaque(pqjs->ctx);
+
+                if (!ctxdata->ran_js_std_init_handlers) {
+                    JSRuntime *rt = JS_GetRuntime(pqjs->ctx);
+                    js_std_init_handlers(rt);
+
+                    ctxdata->ran_js_std_init_handlers = true;
+                }
+
                 break;
             case 2:
                 js_std_add_helpers(pqjs->ctx, 0, NULL);
