@@ -113,6 +113,7 @@ jobs:
       - uses: actions/checkout@main
         with:
             submodules: recursive
+            node-version: 18.x
       - run: perl -V
       - name: Install Dependencies
         run: curl https://cpanmin.us | perl - --notest --installdeps --with-configure --with-develop .
