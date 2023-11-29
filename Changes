@@ -1,6 +1,6 @@
 Revision history for Perl extension JavaScript::QuickJS:
 
-0.18
+0.18 Wed 29 Nov 2023
 - Fix segfault when importing "os".
 
 0.17 Thu 12 Jan 2023

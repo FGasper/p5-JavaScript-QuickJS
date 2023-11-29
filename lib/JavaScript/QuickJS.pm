@@ -47,7 +47,7 @@ your system.
 
 use XSLoader;
 
-our $VERSION = '0.17';
+our $VERSION = '0.18';
 
 XSLoader::load( __PACKAGE__, $VERSION );
 
@@ -363,9 +363,15 @@ L<SpiderMonkey|https://spidermonkey.dev/> engine to Perl.
 
 =back
 
+=head1 TODO
+
+Upstream QuickJS seems to lack active maintenance. It may be advantageous
+to switch to one of its forks (like
+L<quickjs-ng|https://github.com/quickjs-ng/quickjs>).
+
 =head1 LICENSE & COPYRIGHT
 
-This library is copyright 2022 Gasper Software Consulting.
+This library is copyright 2023 Gasper Software Consulting.
 
 This library is licensed under the same terms as Perl itself.
 See L<perlartistic>.
