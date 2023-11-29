@@ -110,12 +110,9 @@ jobs:
       - run: yum -y install https://packages.endpointdev.com/rhel/7/os/x86_64/endpoint-repo.x86_64.rpm
       - run: yum -y update
       - run: yum install -y git make gcc curl perl-ExtUtils-MakeMaker
-      - uses: actions/checkout@main
+      - uses: actions/checkout@v3 # needed for old node.js
         with:
             submodules: recursive
-      - uses: actions/setup-node@main
-        with:
-            node-version: 18
       - run: perl -V
       - name: Install Dependencies
         run: curl https://cpanmin.us | perl - --notest --installdeps --with-configure --with-develop .
