@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 #include "easyxs/easyxs.h"
 
 #include "quickjs/quickjs.h"
