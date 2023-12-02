@@ -90,6 +90,7 @@ t/date.t
 t/export_ref.t
 t/import_os.t
 t/import_std.t
+t/import_std2.t
 t/js2perl.t
 t/js_func_to_perl.t
 t/jsfunc_memory_handling.t

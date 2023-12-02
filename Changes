@@ -1,9 +1,8 @@
 Revision history for Perl extension JavaScript::QuickJS:
 
 0.19
-- BREAKING CHANGE: Script mode now includes the “std” and “os” globals
-  when those options are enabled. (Module mode still requires their
-  manual import.) This matches the “qjs” binary’s behavior.
+- BREAKING CHANGE: Enabling std() or os() now creates globals by those names.
+  This matches the “qjs” binary’s behavior.
 - Update to latest quickjs (03cc5ec).
 
 0.18 Wed 29 Nov 2023
