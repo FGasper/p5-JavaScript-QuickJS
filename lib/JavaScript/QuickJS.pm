@@ -119,8 +119,8 @@ Returns I<OBJ>.
 
 =head2 $obj = I<OBJ>->std()
 
-Enables QuickJS’s C<std> module. This creates a C<std> global
-in script mode and automatically imports the module in module mode.
+Enables QuickJS’s C<std> module and creates a global of the same name
+that’s usable from both script and module modes.
 
 Returns I<OBJ>.
 
@@ -130,7 +130,7 @@ Like C<std()> but for QuickJS’s C<os> module.
 
 =head2 $VALUE = I<OBJ>->eval( $JS_CODE )
 
-Comparable to running C<qjs -e '...'>. Returns $JS_CODE’s last value;
+Like running C<qjs -e '...'>. Returns $JS_CODE’s last value;
 see below for details on type conversions from JavaScript to Perl.
 
 Untrapped exceptions in JavaScript will be rethrown as Perl exceptions.
