@@ -238,7 +238,7 @@ jobs:
 #            PERL_DL_NONLAZY=1 prove -wlvmb t
 
   BSDs:
-    runs-on: macos-10.15
+    runs-on: macos-12
 
     strategy:
       fail-fast: false
