@@ -123,41 +123,11 @@ sub _tweak_for_os {
         Makefile => sub {
             return "CONFIG_DARWIN=y$/" . shift;
         },
-
-        'quickjs-libc.c' => sub {
-            return join(
-                $/,
-                'extern char **environ;',
-                '#include <signal.h>',
-                'typedef sig_t sighandler_t;',
-                shift
-            );
-        },
     );
 
     my %edits = (
-        cygwin => {
-            'quickjs.c' => sub {
-                return "#include <malloc.h>$/" . shift;
-            },
-        },
-
         freebsd => \%bsd_fix,
-
-        openbsd => {
-            %bsd_fix,
-
-            'quickjs.c' => sub {
-
-                # OpenBSD 6.5 seems to have *deleted* this function,
-                # so we can assume it won’t return.
-                #
-                # https://www.openbsd.org/plus65.html
-                # https://fjordtek.com/git/Fincer/openntpd-openbsd/commit/1bb7064e52f2efe021728e66eb627bae7c9fae71
-                #
-                return "#define malloc_usable_size js_malloc_usable_size_unknown$/" . shift;
-            },
-        },
+        openbsd => \%bsd_fix,
     );
 
     if (my $edits_h = $edits{$^O}) {
