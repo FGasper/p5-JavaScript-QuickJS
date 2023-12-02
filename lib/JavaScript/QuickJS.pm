@@ -18,14 +18,14 @@ Quick and dirty …
         [ "The", "last", "value", "is", "returned." ];
     > );
 
-… or, something a bit fancier:
+… or load ES6 modules:
 
-    my $js = JavaScript::QuickJS->new()->std()->helpers();
+    my $js = JavaScript::QuickJS->new()->helpers();
 
     $js->eval_module( q/
-        import * as std from 'std';
+        import * as coolStuff from 'cool/stuff';
 
-        for (const [key, value] of Object.entries(std.getenviron())) {
+        for (const [key, value] of Object.entries(coolStuff)) {
             console.log(key, value);
         }
     / );
@@ -122,11 +122,14 @@ Returns I<OBJ>.
 Enables QuickJS’s C<std> module and creates a global of the same name
 that’s usable from both script and module modes.
 
+This resembles C<qjs>’s C<--std> flag except that it I<only> enables
+C<std>, not C<os>.
+
 Returns I<OBJ>.
 
 =head2 $obj = I<OBJ>->os()
 
-Like C<std()> but for QuickJS’s C<os> module.
+Like C<std()> but enables QuickJS’s C<os> module instead of C<std>.
 
 =head2 $VALUE = I<OBJ>->eval( $JS_CODE )
 
