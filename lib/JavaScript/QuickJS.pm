@@ -119,8 +119,8 @@ Returns I<OBJ>.
 
 =head2 $obj = I<OBJ>->std()
 
-Enables (but does I<not> import) QuickJS’s C<std> module.
-See L</SYNOPSIS> above for example usage.
+Enables QuickJS’s C<std> module. This creates a C<std> global
+in script mode and automatically imports the module in module mode.
 
 Returns I<OBJ>.
 

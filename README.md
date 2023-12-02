@@ -68,8 +68,8 @@ Returns _OBJ_.
 
 ## $obj = _OBJ_->std()
 
-Enables (but does _not_ import) QuickJS’s `std` module.
-See ["SYNOPSIS"](#synopsis) above for example usage.
+Enables QuickJS’s `std` module. This creates a `std` global
+in script mode and automatically imports the module in module mode.
 
 Returns _OBJ_.
 
