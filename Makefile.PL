@@ -286,13 +286,6 @@ sub make_libquickjs_makefile {
     open my $rfh, '<', $mfpath or die "open Makefile: $!";
     my $make = do { local $/; <$rfh> };
 
-    # QuickJS builds by default without position-independent code, which
-    # means the resulting static library is only suitable for executables.
-    # We need position-independent code so we can compile QuickJS into a
-    # shared library.
-    #
-    $make =~ s<^(\s*CFLAGS\s*=\s*)><$1 -fPIC >mg;
-
     # In systems old enough to need -lrt (e.g., CloudLinux 6),
     # assume we need these other omissions as well:
     #
@@ -321,11 +314,18 @@ sub postamble {
     # QuickJS requires GNU make.
     my $make = ($^O =~ m<bsd>i) ? $GMAKE_PATH : '$(MAKE)';
 
+    # QuickJS builds by default without position-independent code, which
+    # means the resulting static library is only suitable for executables.
+    # We need position-independent code so we can compile QuickJS into a
+    # shared library.
+    #
+    my @cflags = qw(-fPIC);
+
     # The leading “+” is to ensure that parallel builds work properly.
     return <<"MAKE_FRAG"
 
 $libpath:
-\t+$make -C quickjs -f '$PERL_QJS_MAKEFILE_PATH' libquickjs.a
+\t+CFLAGS=-fPIC $make -C quickjs -f '$PERL_QJS_MAKEFILE_PATH' libquickjs.a
 MAKE_FRAG
 }
 
