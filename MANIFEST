@@ -87,7 +87,9 @@ t/basic.t
 t/callback_err.t
 t/callback_invalid_sv.t
 t/date.t
+t/date_invalid_input.t
 t/export_ref.t
+t/func_call_invalid_input.t
 t/import_os.t
 t/import_std.t
 t/import_std2.t

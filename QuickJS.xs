@@ -690,7 +690,8 @@ static const char* _FUNCTION_ACCESSORS[] = {
 
 #define FUNC_CALL_INITIAL_ARGS 2
 
-static void _svs_to_jsvars(pTHX_ JSContext* jsctx, int32_t params_count, SV** svs, JSValue* jsvars) {
+// returns the SV to croak.
+static SV* _svs_to_jsvars(pTHX_ JSContext* jsctx, int32_t params_count, SV** svs, JSValue* jsvars) {
     SV* error = NULL;
 
     for (int32_t i=0; i<params_count; i++) {
@@ -703,11 +704,13 @@ static void _svs_to_jsvars(pTHX_ JSContext* jsctx, int32_t params_count, SV** sv
                 JS_FreeValue(jsctx, jsvars[i]);
             }
 
-            croak_sv(error);
+            break;
         }
 
         jsvars[i] = jsval;
     }
+
+    return error;
 }
 
 static void _import_module_to_global(pTHX_ JSContext* jsctx, const char* modname) {
@@ -1092,7 +1095,11 @@ toString (SV* self_sv, ...)
 
             JSValue jsargs[params_count];
 
-            _svs_to_jsvars(aTHX_ ctx, params_count, &ST(1), jsargs);
+            SV* error = _svs_to_jsvars(aTHX_ ctx, params_count, &ST(1), jsargs);
+            if (error) {
+                JS_FreeAtom(pqjs->ctx, prop);
+                croak_sv(error);
+            }
 
             jsret = JS_Invoke(
                 ctx,
@@ -1249,17 +1256,21 @@ call( SV* self_sv, SV* this_sv=&PL_sv_undef, ... )
 
         JSValue jsvars[params_count];
 
-        _svs_to_jsvars( aTHX_ pqjs->ctx, params_count, &ST(FUNC_CALL_INITIAL_ARGS), jsvars );
+        error = _svs_to_jsvars( aTHX_ pqjs->ctx, params_count, &ST(FUNC_CALL_INITIAL_ARGS), jsvars );
+        if (error) {
+            JS_FreeValue(pqjs->ctx, thisjs);
+            croak_sv(error);
+        }
 
         JSValue jsret = JS_Call(pqjs->ctx, pqjs->jsobj, thisjs, params_count, jsvars);
-
-        RETVAL = _return_jsvalue_or_croak(aTHX_ pqjs->ctx, jsret);
 
         JS_FreeValue(pqjs->ctx, thisjs);
 
         for (uint32_t i=0; i<params_count; i++) {
             JS_FreeValue(pqjs->ctx, jsvars[i]);
         }
+
+        RETVAL = _return_jsvalue_or_croak(aTHX_ pqjs->ctx, jsret);
 
     OUTPUT:
         RETVAL
