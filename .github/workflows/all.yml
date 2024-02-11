@@ -180,7 +180,7 @@ jobs:
             submodules: recursive
       - name: Set up Perl
         run: |
-          choco install strawberryperl
+          choco install strawberryperl curl
           #echo "##[add-path]C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin"
           echo 'C:\strawberry\c\bin' >> $GITHUB_PATH
           echo 'C:\strawberry\perl\site\bin' >> $GITHUB_PATH
