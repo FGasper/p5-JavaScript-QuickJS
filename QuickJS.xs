@@ -1092,7 +1092,7 @@ toString (SV* self_sv, ...)
 
             SV* error = _svs_to_jsvars(aTHX_ ctx, params_count, &ST(1), jsargs);
             if (error) {
-                JS_FreeAtom(pqjs->ctx, prop);
+                //JS_FreeAtom(ctx, prop);
                 croak_sv(error);
             }
 
