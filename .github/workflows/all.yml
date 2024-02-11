@@ -180,7 +180,7 @@ jobs:
             submodules: recursive
       - name: Set up Perl
         run: |
-          choco install strawberryperl curl
+          choco install strawberryperl
           #echo "##[add-path]C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin"
           echo 'C:\strawberry\c\bin' >> $GITHUB_PATH
           echo 'C:\strawberry\perl\site\bin' >> $GITHUB_PATH
@@ -238,6 +238,35 @@ jobs:
 #            perl Makefile.PL
 #            make -j3 -j3
 #            PERL_DL_NONLAZY=1 prove -wlvmb t
+
+  BSDs-2:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - name: netbsd
+            versions: ['9.3']
+            vmversion: v1
+            pkginstall: pkg_add gmake curl p5-ExtUtils-MakeMaker
+
+    steps:
+      - uses: actions/checkout@main
+        with:
+          submodules: recursive
+
+      - name: Test on ${{ matrix.os.name }} ${{ matrix.os.versions }}
+        uses: vmactions/${{ matrix.os.name }}-vm@${{ matrix.os.vmversion }}
+        with:
+          usesh: true
+          prepare: ${{ matrix.os.pkginstall }}
+          run: |
+            sudo ${{ matrix.os.pkginstall }}
+            curl -L https://cpanmin.us | sudo perl - --notest --installdeps --with-configure --with-develop .
+            perl Makefile.PL
+            make -j3 -j3
+            PERL_DL_NONLAZY=1 prove -wlvmb t
 
   BSDs:
     runs-on: macos-12
