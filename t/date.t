@@ -43,7 +43,7 @@ for my $getter (@getters) {
 
 my $time = (time - 100) * 1000;
 
-my $settime_return = $date->setTime($value_to_set);
+my $settime_return = $date->setTime($time);
 is(
     $settime_return,
     $date->getTime(),
@@ -52,7 +52,7 @@ is(
 
 is(
     $js->eval("mydate.getTime()"),
-    $value_to_set,
+    $time,
     "setTime() has the intended effect",
 );
 
@@ -64,7 +64,7 @@ for my $settable (@settables) {
 
         my $getter = "get$settable2";
 
-        print "calling $setter($value_to_set)\n";
+        # print "calling $setter($value_to_set)\n";
 
         my $setter_return = $date->$setter($value_to_set);
 
