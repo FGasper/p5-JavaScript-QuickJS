@@ -1031,12 +1031,16 @@ setTime (SV* self_sv, SV* num_sv)
         JSAtom prop = JS_NewAtom(ctx, setter_name);
 
         JSValue arg;
+        NV nvval;
+
         switch (exs_sv_type(num_sv)) {
 
             // In 32-bit perls setTime() values often overflow IV_MAX.
             case EXS_SVTYPE_NV:
-                if (SvNV(num_sv) > IV_MAX || SvNV(num_sv) < IV_MIN) {
-                    arg = JS_NewFloat64(ctx, (double) SvNV(num_sv));
+            case EXS_SVTYPE_STRING:
+                nvval = SvNV(num_sv);
+                if (nvval > IV_MAX || nvval < IV_MIN) {
+                    arg = JS_NewFloat64(ctx, (double) nvval);
                     break;
                 }
 

@@ -41,20 +41,24 @@ for my $getter (@getters) {
     is($perl_got, $js_got, "$getter() is the same in Perl and JS");
 }
 
-my $time = (time - 100) * 1000;
+my $time_num = (time - 100) * 1000;
+my $time_str = $time_num;
+$time_str .= '';
 
-my $settime_return = $date->setTime($time);
-is(
-    $settime_return,
-    $date->getTime(),
-    "setTime() returns as expected",
-);
+for my $time ($time_num, $time_str) {
+    my $settime_return = $date->setTime($time);
+    is(
+        $settime_return,
+        $date->getTime(),
+        "setTime() returns as expected",
+    );
 
-is(
-    $js->eval("mydate.getTime()"),
-    $time,
-    "setTime() has the intended effect",
-);
+    is(
+        $js->eval("mydate.getTime()"),
+        $time,
+        "setTime() has the intended effect",
+    );
+}
 
 for my $settable (@settables) {
     my $value_to_set = '' . (($settable eq 'FullYear') ? 1976 : 11);
