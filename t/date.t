@@ -64,6 +64,8 @@ for my $settable (@settables) {
 
         my $getter = "get$settable2";
 
+        print "calling $setter($value_to_set)\n";
+
         my $setter_return = $date->$setter($value_to_set);
 
         is(
