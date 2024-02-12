@@ -80,12 +80,15 @@ for my $settable (@settables) {
             "$setter($value_to_set)",
         );
 
-        $date->$setter(-$value_to_set);
-        is(
-            $js->eval("mydate.get$settable2()"),
-            $date->$getter(),
-            "$setter(-$value_to_set)",
-        );
+        # Avoid this bug: https://github.com/bellard/quickjs/issues/238
+        if ($^O ne 'MSWin32' || $settable ne 'FullYear') {
+            $date->$setter(-$value_to_set);
+            is(
+                $js->eval("mydate.get$settable2()"),
+                $date->$getter(),
+                "$setter(-$value_to_set)",
+            );
+        }
     }
 }
 
