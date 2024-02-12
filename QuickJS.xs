@@ -1029,7 +1029,10 @@ setTime (SV* self_sv, SV* num_sv)
         JSContext *ctx = pqjs->ctx;
 
         JSAtom prop = JS_NewAtom(ctx, setter_name);
+        fprintf(stderr, "%s, %s\n", __func__, setter_name);
+        sv_dump(num_sv);
         JSValue arg = _sviv_to_js(aTHX_ ctx, num_sv);
+        fprintf(stderr, "jsval tag: %d\n", JS_VALUE_GET_NORM_TAG(arg));
 
         JSValue jsret = JS_Invoke(
             ctx,
@@ -1092,7 +1095,7 @@ toString (SV* self_sv, ...)
 
             SV* error = _svs_to_jsvars(aTHX_ ctx, params_count, &ST(1), jsargs);
             if (error) {
-                //JS_FreeAtom(ctx, prop);
+                JS_FreeAtom(ctx, prop);
                 croak_sv(error);
             }
 
