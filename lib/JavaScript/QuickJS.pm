@@ -47,7 +47,7 @@ your system.
 
 use XSLoader;
 
-our $VERSION = '0.19_91';
+our $VERSION = '0.19_92';
 
 XSLoader::load( __PACKAGE__, $VERSION );
 
