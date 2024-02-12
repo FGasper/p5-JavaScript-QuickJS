@@ -35,6 +35,7 @@ my @getters = (
 );
 
 for my $getter (@getters) {
+    print "calling $getter\n";
     my $perl_got = $date->$getter();
     my $js_got = $js->eval("mydate.$getter()");
 
