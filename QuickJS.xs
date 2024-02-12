@@ -1027,7 +1027,7 @@ setTime (SV* self_sv, SV* num_sv)
         setUTCFullYear = 14
 
     CODE:
-        fprintf(stderr, "ix=%ld; DATE_SETTER_FROM_IX=%p\n", ix, DATE_SETTER_FROM_IX);
+        fprintf(stderr, "ix=%ld\n", ix);
 
         const char* setter_name = DATE_SETTER_FROM_IX[ix];
 
@@ -1084,7 +1084,8 @@ toString (SV* self_sv, ...)
         getUTCDay = 26
         toJSON = 27
     CODE:
-        fprintf(stderr, "ix=%ld; DATE_GETTER_FROM_IX=%p\n", ix, DATE_GETTER_FROM_IX);
+        fprintf(stderr, "ix=%ld\n", ix);
+        fprintf(stderr, "DATE_GETTER_FROM_IX=%p\n", DATE_GETTER_FROM_IX);
 
         perl_qjs_jsobj_s* pqjs = exs_structref_ptr(self_sv);
         JSContext *ctx = pqjs->ctx;
