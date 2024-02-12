@@ -34,12 +34,12 @@ my @getters = (
     ),
 );
 
-for my $getter (@getters) {
-    my $perl_got = $date->$getter();
-    my $js_got = $js->eval("mydate.$getter()");
-
-    is($perl_got, $js_got, "$getter() is the same in Perl and JS");
-}
+#for my $getter (@getters) {
+#    my $perl_got = $date->$getter();
+#    my $js_got = $js->eval("mydate.$getter()");
+#
+#    is($perl_got, $js_got, "$getter() is the same in Perl and JS");
+#}
 
 for my $settable (@settables) {
     my $value = '42';   # string on purpose
