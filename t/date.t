@@ -34,19 +34,15 @@ my @getters = (
     ),
 );
 
-#for my $getter (@getters) {
-#    my $perl_got = $date->$getter();
-#    my $js_got = $js->eval("mydate.$getter()");
-#
-#    is($perl_got, $js_got, "$getter() is the same in Perl and JS");
-#}
+for my $getter (@getters) {
+    my $perl_got = $date->$getter();
+    my $js_got = $js->eval("mydate.$getter()");
+
+    is($perl_got, $js_got, "$getter() is the same in Perl and JS");
+}
 
 my $value_to_set = '11';   # string on purpose
 
-use Data::Dumper;
-print Dumper($date, $date->can('setTime'));
-        use Devel::Peek;
-        Dump($date);
 my $settime_return = $date->setTime($value_to_set);
 is(
     $settime_return,
@@ -61,15 +57,12 @@ is(
 );
 
 for my $settable (@settables) {
+    my $value_to_set = ($settable eq 'FullYear') ? '1976' : $value_to_set;
 
     for my $settable2 ( $settable, "UTC$settable" ) {
         my $setter = "set$settable2";
 
         my $getter = "get$settable2";
-
-        print "calling $setter on $date\n";
-        use Data::Dumper;
-        print Dumper $date->can($setter);
 
         my $setter_return = $date->$setter($value_to_set);
 

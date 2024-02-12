@@ -1023,19 +1023,13 @@ setTime (SV* self_sv, SV* num_sv)
         setUTCFullYear = 14
 
     CODE:
-        fprintf(stderr, "ix=%ld\n", ix);
-        fprintf(stderr, "DATE_SETTER_FROM_IX=%p\n", DATE_SETTER_FROM_IX);
-        /*
         const char* setter_name = DATE_SETTER_FROM_IX[ix];
-        fprintf(stderr, "%s, %s\n", __func__, setter_name);
 
         perl_qjs_jsobj_s* pqjs = exs_structref_ptr(self_sv);
         JSContext *ctx = pqjs->ctx;
 
         JSAtom prop = JS_NewAtom(ctx, setter_name);
-        sv_dump(num_sv);
         JSValue arg = _sviv_to_js(aTHX_ ctx, num_sv);
-        fprintf(stderr, "jsval tag: %d\n", JS_VALUE_GET_NORM_TAG(arg));
 
         JSValue jsret = JS_Invoke(
             ctx,
@@ -1049,8 +1043,6 @@ setTime (SV* self_sv, SV* num_sv)
         JS_FreeValue(ctx, arg);
 
         RETVAL = _return_jsvalue_or_croak(aTHX_ pqjs->ctx, jsret);
-        */
-        RETVAL = &PL_sv_undef;
 
     OUTPUT:
         RETVAL
