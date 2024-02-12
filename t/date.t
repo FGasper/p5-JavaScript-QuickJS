@@ -43,6 +43,8 @@ my @getters = (
 
 my $value_to_set = '11';   # string on purpose
 
+use Data::Dumper;
+print Dumper($date, $date->can('setTime'));
 my $settime_return = $date->setTime($value_to_set);
 is(
     $settime_return,
