@@ -321,7 +321,7 @@ sub make_libquickjs_makefile {
     # We need position-independent code so we can compile QuickJS into a
     # shared library.
     #
-    $make =~ s<^(\s*CFLAGS\s*=\s*)><$1 -fPIC >mg;
+    substr($make, 0, 0, "CFLAGS=-fPIC\n");
 
     # In systems old enough to need -lrt (e.g., CloudLinux 6),
     # assume we need these other omissions as well:

@@ -974,6 +974,7 @@ eval (SV* self_sv, SV* js_code_sv)
         // an exception. If not we’ll just discard the return value
         RETVAL = _return_jsvalue_or_croak(aTHX_ ctx, jsret);
 
+        /*
         if (ix) {
 
             // The only thing a JS module should return is null.
@@ -985,6 +986,7 @@ eval (SV* self_sv, SV* js_code_sv)
 
             RETVAL = SvREFCNT_inc(self_sv);
         }
+        */
 
     OUTPUT:
         RETVAL
