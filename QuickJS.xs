@@ -1023,8 +1023,6 @@ setTime (SV* self_sv, SV* num_sv)
         setUTCFullYear = 14
 
     CODE:
-        warn("%s, ix=%d\n", __func__, ix);
-        sv_dump(num_sv);
         const char* setter_name = DATE_SETTER_FROM_IX[ix];
 
         perl_qjs_jsobj_s* pqjs = exs_structref_ptr(self_sv);
