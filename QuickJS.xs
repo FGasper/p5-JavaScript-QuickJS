@@ -1029,7 +1029,23 @@ setTime (SV* self_sv, SV* num_sv)
         JSContext *ctx = pqjs->ctx;
 
         JSAtom prop = JS_NewAtom(ctx, setter_name);
-        JSValue arg = _sviv_to_js(aTHX_ ctx, num_sv);
+
+        JSValue arg;
+        switch (exs_sv_type(num_sv)) {
+
+            // In 32-bit perls setTime() values often overflow IV_MAX.
+            case EXS_SVTYPE_NV:
+                NV nvval = SvNV(num_sv);
+                if (nvval > IV_MAX || nvval < IV_MIN) {
+                    arg = JS_NewFloat64(ctx, (double) nvval);
+                    break;
+                }
+
+                // fallthrough
+
+            default:
+                    arg = _sviv_to_js(aTHX_ ctx, num_sv);
+        }
 
         JSValue jsret = JS_Invoke(
             ctx,

@@ -1,6 +1,8 @@
 Revision history for Perl extension JavaScript::QuickJS:
 
 0.20
+- Fix integer-overflow bug in setTime() (et al.) when Perl stores the number
+  as NV rather than IV/UV.
 - Properly free QuickJS resources upon failure to convert Perl parameters
   to JavaScript.
 - Add Promise support.
