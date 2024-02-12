@@ -45,6 +45,8 @@ my $value_to_set = '11';   # string on purpose
 
 use Data::Dumper;
 print Dumper($date, $date->can('setTime'));
+        use Devel::Peek;
+        Dump($date);
 my $settime_return = $date->setTime($value_to_set);
 is(
     $settime_return,
@@ -67,8 +69,6 @@ for my $settable (@settables) {
 
         print "calling $setter on $date\n";
         use Data::Dumper;
-        use Devel::Peek;
-        Dump($date);
         print Dumper $date->can($setter);
 
         my $setter_return = $date->$setter($value_to_set);
