@@ -41,7 +41,7 @@ for my $getter (@getters) {
     is($perl_got, $js_got, "$getter() is the same in Perl and JS");
 }
 
-my $value_to_set = '11';   # string on purpose
+my $time = (time - 100) * 1000;
 
 my $settime_return = $date->setTime($value_to_set);
 is(
@@ -57,7 +57,7 @@ is(
 );
 
 for my $settable (@settables) {
-    my $value_to_set = ($settable eq 'FullYear') ? '1976' : $value_to_set;
+    my $value_to_set = '' . (($settable eq 'FullYear') ? 1976 : 11);
 
     for my $settable2 ( $settable, "UTC$settable" ) {
         my $setter = "set$settable2";
