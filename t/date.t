@@ -67,6 +67,8 @@ for my $settable (@settables) {
 
         print "calling $setter on $date\n";
         use Data::Dumper;
+        use Devel::Peek;
+        Dump($date);
         print Dumper $date->can($setter);
 
         my $setter_return = $date->$setter($value_to_set);
