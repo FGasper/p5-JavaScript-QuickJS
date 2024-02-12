@@ -1023,7 +1023,8 @@ setTime (SV* self_sv, SV* num_sv)
         setUTCFullYear = 14
 
     CODE:
-        fprintf(stderr, "ix=%d; DATE_SETTER_FROM_IX=%p\n", ix, DATE_SETTER_FROM_IX);
+        fprintf(stderr, "id=%ld\n", ix);
+        fprintf(stderr, "DATE_SETTER_FROM_IX=%p\n", DATE_SETTER_FROM_IX);
         const char* setter_name = DATE_SETTER_FROM_IX[ix];
         fprintf(stderr, "%s, %s\n", __func__, setter_name);
 
