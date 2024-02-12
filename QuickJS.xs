@@ -1084,7 +1084,7 @@ toString (SV* self_sv, ...)
         getUTCDay = 26
         toJSON = 27
     CODE:
-        printf("hello from %s\n", __func__);
+        //printf("hello from %s\n", __func__);
         // fprintf(stderr, "ix=%ld\n", ix);
         // fprintf(stderr, "DATE_GETTER_FROM_IX=%p\n", DATE_GETTER_FROM_IX);
 
