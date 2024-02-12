@@ -41,8 +41,22 @@ my @getters = (
 #    is($perl_got, $js_got, "$getter() is the same in Perl and JS");
 #}
 
+my $value_to_set = '11';   # string on purpose
+
+my $settime_return = $date->setTime($value_to_set);
+is(
+    $settime_return,
+    $date->getTime(),
+    "setTime() returns as expected",
+);
+
+is(
+    $js->eval("mydate.getTime()"),
+    $value_to_set,
+    "setTime() has the intended effect",
+);
+
 for my $settable (@settables) {
-    my $value = '42';   # string on purpose
 
     for my $settable2 ( $settable, "UTC$settable" ) {
         my $setter = "set$settable2";
@@ -53,7 +67,7 @@ for my $settable (@settables) {
         use Data::Dumper;
         print Dumper $date->can($setter);
 
-        my $setter_return = $date->$setter($value);
+        my $setter_return = $date->$setter($value_to_set);
 
         is(
             $setter_return,
@@ -63,15 +77,15 @@ for my $settable (@settables) {
 
         is(
             $js->eval("mydate.get$settable2()"),
-            $date->$getter(),
-            "$setter($value)",
+            $value_to_set,
+            "$setter($value_to_set)",
         );
 
-        $date->$setter(-$value);
+        $date->$setter(-$value_to_set);
         is(
             $js->eval("mydate.get$settable2()"),
             $date->$getter(),
-            "$setter(-$value)",
+            "$setter(-$value_to_set)",
         );
     }
 }
