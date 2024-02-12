@@ -49,7 +49,9 @@ for my $settable (@settables) {
 
         my $getter = "get$settable2";
 
-        print "calling $setter\n";
+        print "calling $setter on $date\n";
+        use Data::Dumper;
+        print Dumper $date->can($setter);
 
         my $setter_return = $date->$setter($value);
 
