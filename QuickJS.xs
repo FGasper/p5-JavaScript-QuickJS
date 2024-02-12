@@ -1027,8 +1027,6 @@ setTime (SV* self_sv, SV* num_sv)
         setUTCFullYear = 14
 
     CODE:
-        warn("%s, ix=%ld\n", __func__, ix);
-
         const char* setter_name = DATE_SETTER_FROM_IX[ix];
 
         perl_qjs_jsobj_s* pqjs = exs_structref_ptr(self_sv);
@@ -1084,8 +1082,6 @@ toString (SV* self_sv, ...)
         getUTCDay = 26
         toJSON = 27
     CODE:
-        warn("%s, ix=%ld\n", __func__, ix);
-
         perl_qjs_jsobj_s* pqjs = exs_structref_ptr(self_sv);
         JSContext *ctx = pqjs->ctx;
 

@@ -53,7 +53,7 @@ for my $settable (@settables) {
 
         my $getter = "get$settable2";
 
-        print "======= before $setter\n";
+        print "======= before $setter($value)\n";
 
         my $setter_return = $date->$setter($value);
         print "======= after $setter\n";
