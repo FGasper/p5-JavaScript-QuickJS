@@ -41,9 +41,6 @@ for my $getter (@getters) {
     is($perl_got, $js_got, "$getter() is the same in Perl and JS");
 }
 
-my $INT32_MAX = ( 1 << 31 ) - 1;
-my $INT32_MIN = -$INT32_MAX - 1;
-
 for my $settable (@settables) {
     my $value = '42';   # string on purpose
 
@@ -51,6 +48,8 @@ for my $settable (@settables) {
         my $setter = "set$settable2";
 
         my $getter = "get$settable2";
+
+        print "calling $setter\n";
 
         my $setter_return = $date->$setter($value);
 
