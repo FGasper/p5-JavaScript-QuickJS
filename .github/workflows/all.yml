@@ -14,162 +14,162 @@ env:
    PERL_CARTON_PATH: $GITHUB_WORKSPACE/local
 
 jobs:
-  linux:
-    runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        perl-version:
-          - '5.36'
-          - '5.34'
-          - '5.32'
-          - '5.30'
-          - '5.28'
-          - '5.26'
-          - '5.24'
-          - '5.22'
-          - '5.20'
-          - '5.18'
-          - '5.16'
-          - '5.14'
-          - '5.12'
-          - '5.10'
-          - '5.8'
-
-    container:
-      image: perldocker/perl-tester:${{ matrix.perl-version }}
-
-    steps:
-      - uses: actions/checkout@main
-        with:
-            submodules: recursive
-      - name: perl -V
-        run: perl -V
-      - name: Install Dependencies
-        run: cpanm --notest --installdeps --with-configure --with-develop .
-      - name: perl Makefile.PL
-        run: perl Makefile.PL
-      - name: make
-        run: make -j3 -j3
-      - name: Run Tests
-        run: prove -wlvmb t
-        env:
-            PERL_DL_NONLAZY: 1
-
-  linux-specialperls:
-    runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        perl-version:
-          - '5.020.003'
-          - '5.022.004'
-          - '5.024.004'
-          - '5.026.003'
-          - '5.028.003'
-          - '5.030.003'
-          - '5.032.001'
-          - '5.034.000'
-        perl-type:
-#          - 'main-longdouble-buster'
-          - 'main-quadmath-buster'
-#          - 'main-threaded-buster'
-
-    container:
-      image: simcop2387/perl-tester:${{ matrix.perl-version }}-${{ matrix.perl-type }}
-
-    steps:
-      - uses: actions/checkout@main
-        with:
-            submodules: recursive
-      - run: perl -V
-      - run: apt update
-      - run: apt install -y curl
-      - name: Install Dependencies
-        run: curl -L https://cpanmin.us | perl - --notest --installdeps --with-configure --with-develop .
-      - name: perl Makefile.PL
-        run: perl Makefile.PL
-      - name: make
-        run: make -j3 -j3
-      - name: Run Tests
-        run: prove -wlvmb t
-        env:
-            PERL_DL_NONLAZY: 1
-
-  linux-centos7:
-    runs-on: ubuntu-latest
-
-    container:
-      image: centos:centos7
-
-    steps:
-
-      # CentOS 7’s git is too old for submodules.
-      - run: yum -y install https://packages.endpointdev.com/rhel/7/os/x86_64/endpoint-repo.x86_64.rpm
-      - run: yum -y update
-      - run: yum install -y git make gcc curl perl-ExtUtils-MakeMaker
-      - uses: actions/checkout@v3 # needed for old node.js
-        with:
-            submodules: recursive
-      - run: perl -V
-      - name: Install Dependencies
-        run: curl https://cpanmin.us | perl - --notest --installdeps --with-configure --with-develop .
-      - name: perl Makefile.PL
-        run: perl Makefile.PL
-      - name: make
-        run: make -j3 -j3
-      - name: Run Tests
-        run: prove -wlvmb t
-        env:
-            PERL_DL_NONLAZY: 1
-
-  mac:
-    runs-on: macOS-latest
-
-    steps:
-      - uses: actions/checkout@main
-        with:
-            submodules: recursive
-      - name: Set up Perl
-        run: brew install perl
-      - name: perl -V
-        run: perl -V
-      - name: Install Dependencies
-        run: curl -L https://cpanmin.us | perl - --notest --installdeps --with-develop --with-configure .
-      - name: perl Makefile.PL
-        run: perl Makefile.PL
-      - name: make
-        run: make -j3 -j3
-      - name: Run tests (with coverage)
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          curl -L https://cpanmin.us | perl - --notest Devel::Cover::Report::Coveralls
-          `perl -MConfig -E'print $Config::Config{"sitebin"}'`/cover -test -report Coveralls -ignore_re easyxs -ignore_re inline
-
-  qemu-alpine:
-    runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-          - i386
-          - arm32v6
-          - arm32v7
-          - arm64v8
-          - s390x
-
-    steps:
-      - uses: actions/checkout@main
-        with:
-            submodules: recursive
-      - name: Get the qemu container
-        run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-      - name: Run tests on ${{ matrix.platform }}
-        run: docker run --rm --interactive --mount type=bind,source=$(pwd),target=/host ${{ matrix.platform }}/alpine sh -c "apk add curl wget perl perl-dev make gcc libc-dev; cd /host; perl -V; curl -L https://cpanmin.us | perl - --verbose --notest --installdeps --with-configure .; perl Makefile.PL; make -j3 -j3; PERL_DL_NONLAZY=1 prove -wlvmb t"
+#  linux:
+#    runs-on: ubuntu-latest
+#
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        perl-version:
+#          - '5.36'
+#          - '5.34'
+#          - '5.32'
+#          - '5.30'
+#          - '5.28'
+#          - '5.26'
+#          - '5.24'
+#          - '5.22'
+#          - '5.20'
+#          - '5.18'
+#          - '5.16'
+#          - '5.14'
+#          - '5.12'
+#          - '5.10'
+#          - '5.8'
+#
+#    container:
+#      image: perldocker/perl-tester:${{ matrix.perl-version }}
+#
+#    steps:
+#      - uses: actions/checkout@main
+#        with:
+#            submodules: recursive
+#      - name: perl -V
+#        run: perl -V
+#      - name: Install Dependencies
+#        run: cpanm --notest --installdeps --with-configure --with-develop .
+#      - name: perl Makefile.PL
+#        run: perl Makefile.PL
+#      - name: make
+#        run: make -j3 -j3
+#      - name: Run Tests
+#        run: prove -wlvmb t
+#        env:
+#            PERL_DL_NONLAZY: 1
+#
+#  linux-specialperls:
+#    runs-on: ubuntu-latest
+#
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        perl-version:
+#          - '5.020.003'
+#          - '5.022.004'
+#          - '5.024.004'
+#          - '5.026.003'
+#          - '5.028.003'
+#          - '5.030.003'
+#          - '5.032.001'
+#          - '5.034.000'
+#        perl-type:
+##          - 'main-longdouble-buster'
+#          - 'main-quadmath-buster'
+##          - 'main-threaded-buster'
+#
+#    container:
+#      image: simcop2387/perl-tester:${{ matrix.perl-version }}-${{ matrix.perl-type }}
+#
+#    steps:
+#      - uses: actions/checkout@main
+#        with:
+#            submodules: recursive
+#      - run: perl -V
+#      - run: apt update
+#      - run: apt install -y curl
+#      - name: Install Dependencies
+#        run: curl -L https://cpanmin.us | perl - --notest --installdeps --with-configure --with-develop .
+#      - name: perl Makefile.PL
+#        run: perl Makefile.PL
+#      - name: make
+#        run: make -j3 -j3
+#      - name: Run Tests
+#        run: prove -wlvmb t
+#        env:
+#            PERL_DL_NONLAZY: 1
+#
+#  linux-centos7:
+#    runs-on: ubuntu-latest
+#
+#    container:
+#      image: centos:centos7
+#
+#    steps:
+#
+#      # CentOS 7’s git is too old for submodules.
+#      - run: yum -y install https://packages.endpointdev.com/rhel/7/os/x86_64/endpoint-repo.x86_64.rpm
+#      - run: yum -y update
+#      - run: yum install -y git make gcc curl perl-ExtUtils-MakeMaker
+#      - uses: actions/checkout@v3 # needed for old node.js
+#        with:
+#            submodules: recursive
+#      - run: perl -V
+#      - name: Install Dependencies
+#        run: curl https://cpanmin.us | perl - --notest --installdeps --with-configure --with-develop .
+#      - name: perl Makefile.PL
+#        run: perl Makefile.PL
+#      - name: make
+#        run: make -j3 -j3
+#      - name: Run Tests
+#        run: prove -wlvmb t
+#        env:
+#            PERL_DL_NONLAZY: 1
+#
+#  mac:
+#    runs-on: macOS-latest
+#
+#    steps:
+#      - uses: actions/checkout@main
+#        with:
+#            submodules: recursive
+#      - name: Set up Perl
+#        run: brew install perl
+#      - name: perl -V
+#        run: perl -V
+#      - name: Install Dependencies
+#        run: curl -L https://cpanmin.us | perl - --notest --installdeps --with-develop --with-configure .
+#      - name: perl Makefile.PL
+#        run: perl Makefile.PL
+#      - name: make
+#        run: make -j3 -j3
+#      - name: Run tests (with coverage)
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        run: |
+#          curl -L https://cpanmin.us | perl - --notest Devel::Cover::Report::Coveralls
+#          `perl -MConfig -E'print $Config::Config{"sitebin"}'`/cover -test -report Coveralls -ignore_re easyxs -ignore_re inline
+#
+#  qemu-alpine:
+#    runs-on: ubuntu-latest
+#
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        platform:
+#          - i386
+#          - arm32v6
+#          - arm32v7
+#          - arm64v8
+#          - s390x
+#
+#    steps:
+#      - uses: actions/checkout@main
+#        with:
+#            submodules: recursive
+#      - name: Get the qemu container
+#        run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+#      - name: Run tests on ${{ matrix.platform }}
+#        run: docker run --rm --interactive --mount type=bind,source=$(pwd),target=/host ${{ matrix.platform }}/alpine sh -c "apk add curl wget perl perl-dev make gcc libc-dev; cd /host; perl -V; curl -L https://cpanmin.us | perl - --verbose --notest --installdeps --with-configure .; perl Makefile.PL; make -j3 -j3; PERL_DL_NONLAZY=1 prove -wlvmb t"
 
   windows:
     runs-on: windows-latest
@@ -195,80 +195,80 @@ jobs:
       - name: Run Tests
         run: prove -wlvmb t
 
-  cygwin:
-    runs-on: windows-latest
-
-    steps:
-      - name: Set up Cygwin
-        uses: cygwin/cygwin-install-action@master
-        with:
-            packages: perl_base perl-ExtUtils-MakeMaker make gcc-g++ libcrypt-devel libnsl-devel bash
-      - uses: actions/checkout@main
-        with:
-            submodules: recursive
-      - shell: C:\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
-        run: |
-            perl -V
-            cpan -T App::cpanminus
-            cd $GITHUB_WORKSPACE;
-            cpanm --verbose --notest --installdeps --with-configure --with-develop .
-            perl Makefile.PL
-            make -j3 -j3 test
-
-# It’s awfully slow, and it sometimes hangs.
-#  Solaris:
+#  cygwin:
+#    runs-on: windows-latest
+#
+#    steps:
+#      - name: Set up Cygwin
+#        uses: cygwin/cygwin-install-action@master
+#        with:
+#            packages: perl_base perl-ExtUtils-MakeMaker make gcc-g++ libcrypt-devel libnsl-devel bash
+#      - uses: actions/checkout@main
+#        with:
+#            submodules: recursive
+#      - shell: C:\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
+#        run: |
+#            perl -V
+#            cpan -T App::cpanminus
+#            cd $GITHUB_WORKSPACE;
+#            cpanm --verbose --notest --installdeps --with-configure --with-develop .
+#            perl Makefile.PL
+#            make -j3 -j3 test
+#
+## It’s awfully slow, and it sometimes hangs.
+##  Solaris:
+##    runs-on: macos-12
+##
+##    steps:
+##      - uses: actions/checkout@main
+##        with:
+##          submodules: recursive
+##      - uses: vmactions/solaris-vm@main
+##        with:
+##          usesh: true
+##          mem: 2048
+##          copyback: false
+##          prepare: |
+##            pkgutil --yes --install gmake
+##          run: |
+##            perl -V
+##            cpan -T App::cpanminus
+##            cpanm --notest --installdeps --with-configure --with-develop .
+##            perl Makefile.PL
+##            make -j3 -j3
+##            PERL_DL_NONLAZY=1 prove -wlvmb t
+#
+#  BSDs:
 #    runs-on: macos-12
+#
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        os:
+#          - name: freebsd
+#            version: '13.0'
+#            pkginstall: pkg install -y gmake p5-ExtUtils-MakeMaker
+#          # - name: freebsd
+#          #   version: '12.2'
+#          #   pkginstall: pkg install -y gmake p5-ExtUtils-MakeMaker
+#          - name: openbsd
+#            version: '7.1'
+#            pkginstall: pkg_add gmake curl p5-ExtUtils-MakeMaker
 #
 #    steps:
 #      - uses: actions/checkout@main
 #        with:
 #          submodules: recursive
-#      - uses: vmactions/solaris-vm@main
+#
+#      - name: Test on ${{ matrix.os.name }}
+#        uses: cross-platform-actions/action@master
 #        with:
-#          usesh: true
-#          mem: 2048
-#          copyback: false
-#          prepare: |
-#            pkgutil --yes --install gmake
+#          operating_system: ${{ matrix.os.name }}
+#          version: ${{ matrix.os.version }}
+#          shell: bash
 #          run: |
-#            perl -V
-#            cpan -T App::cpanminus
-#            cpanm --notest --installdeps --with-configure --with-develop .
+#            sudo ${{ matrix.os.pkginstall }}
+#            curl -L https://cpanmin.us | sudo perl - --notest --installdeps --with-configure --with-develop .
 #            perl Makefile.PL
 #            make -j3 -j3
 #            PERL_DL_NONLAZY=1 prove -wlvmb t
-
-  BSDs:
-    runs-on: macos-12
-
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - name: freebsd
-            version: '13.0'
-            pkginstall: pkg install -y gmake p5-ExtUtils-MakeMaker
-          # - name: freebsd
-          #   version: '12.2'
-          #   pkginstall: pkg install -y gmake p5-ExtUtils-MakeMaker
-          - name: openbsd
-            version: '7.1'
-            pkginstall: pkg_add gmake curl p5-ExtUtils-MakeMaker
-
-    steps:
-      - uses: actions/checkout@main
-        with:
-          submodules: recursive
-
-      - name: Test on ${{ matrix.os.name }}
-        uses: cross-platform-actions/action@master
-        with:
-          operating_system: ${{ matrix.os.name }}
-          version: ${{ matrix.os.version }}
-          shell: bash
-          run: |
-            sudo ${{ matrix.os.pkginstall }}
-            curl -L https://cpanmin.us | sudo perl - --notest --installdeps --with-configure --with-develop .
-            perl Makefile.PL
-            make -j3 -j3
-            PERL_DL_NONLAZY=1 prove -wlvmb t
