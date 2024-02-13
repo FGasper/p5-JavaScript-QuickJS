@@ -89,7 +89,7 @@ Untrapped exceptions in JavaScript will be rethrown as Perl exceptions.
 
 $JS\_CODE is a _character_ string.
 
-## $obj = $PROMISE = _OBJ_->eval\_module( $JS\_CODE )
+## $promise = _OBJ_->eval\_module( $JS\_CODE )
 
 Runs $JS\_CODE as a module, which enables ES6 module syntax.
 Note that no values can be returned directly in this mode of execution.
