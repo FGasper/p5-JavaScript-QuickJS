@@ -275,12 +275,6 @@ V8 versions.
 - [JavaScript](https://metacpan.org/pod/JavaScript) and [JavaScript::Lite](https://metacpan.org/pod/JavaScript%3A%3ALite) expose Mozilla’s
 [SpiderMonkey](https://spidermonkey.dev/) engine to Perl.
 
-# TODO
-
-Upstream QuickJS seems to lack active maintenance. It may be advantageous
-to switch to one of its forks (like
-[quickjs-ng](https://github.com/quickjs-ng/quickjs)).
-
 # LICENSE & COPYRIGHT
 
 This library is copyright 2023 Gasper Software Consulting.
