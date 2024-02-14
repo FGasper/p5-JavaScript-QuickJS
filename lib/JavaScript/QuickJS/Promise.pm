@@ -7,7 +7,7 @@ use warnings;
 
 =head1 NAME
 
-JavaScript::QuickJS::Promise
+JavaScript::QuickJS::Promise - Represents a JavaScript Promise instance in Perl
 
 =head1 SYNOPSIS
 

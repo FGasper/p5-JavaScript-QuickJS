@@ -7,7 +7,7 @@ use warnings;
 
 =head1 NAME
 
-JavaScript::QuickJS::Date
+JavaScript::QuickJS::Date - Represents a JavaScript Date instance in Perl
 
 =head1 SYNOPSIS
 

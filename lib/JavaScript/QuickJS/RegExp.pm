@@ -7,7 +7,7 @@ use warnings;
 
 =head1 NAME
 
-JavaScript::QuickJS::RegExp
+JavaScript::QuickJS::RegExp - Represents a JavaScript RegExp instance in Perl.
 
 =head1 SYNOPSIS
 

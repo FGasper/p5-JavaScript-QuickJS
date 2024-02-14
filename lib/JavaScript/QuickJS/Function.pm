@@ -7,7 +7,7 @@ use warnings;
 
 =head1 NAME
 
-JavaScript::QuickJS::Function
+JavaScript::QuickJS::Function - Represents a JavaScript Function instance in Perl
 
 =head1 SYNOPSIS
 
