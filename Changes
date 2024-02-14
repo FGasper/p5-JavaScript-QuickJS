@@ -1,5 +1,8 @@
 Revision history for Perl extension JavaScript::QuickJS:
 
+0.21 Sec 14 Feb 2024
+- Documentation updates. (No functional changes.)
+
 0.20 Tue 13 Feb 2024
 - BREAKING CHANGE: eval_module() now returns a Promise (as QuickJS itself
   now does) instead of the JavaScript::QuickJS instance.
