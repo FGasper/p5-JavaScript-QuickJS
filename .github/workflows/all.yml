@@ -85,37 +85,11 @@ jobs:
         with:
             submodules: recursive
       - run: perl -V
+      - run: echo "deb http://archive.debian.org/debian buster-backports main" | sudo tee /etc/apt/sources.list.d/buster-backports.list
       - run: apt update
       - run: apt install -y curl
       - name: Install Dependencies
         run: curl -L https://cpanmin.us | perl - --notest --installdeps --with-configure --with-develop .
-      - name: perl Makefile.PL
-        run: perl Makefile.PL
-      - name: make
-        run: make -j3 -j3
-      - name: Run Tests
-        run: prove -wlvmb t
-        env:
-            PERL_DL_NONLAZY: 1
-
-  linux-centos7:
-    runs-on: ubuntu-latest
-
-    container:
-      image: centos:centos7
-
-    steps:
-
-      # CentOS 7’s git is too old for submodules.
-      - run: yum -y install https://packages.endpointdev.com/rhel/7/os/x86_64/endpoint-repo.x86_64.rpm
-      - run: yum -y update
-      - run: yum install -y git make gcc curl perl-ExtUtils-MakeMaker
-      - uses: actions/checkout@v3 # needed for old node.js
-        with:
-            submodules: recursive
-      - run: perl -V
-      - name: Install Dependencies
-        run: curl https://cpanmin.us | perl - --notest --installdeps --with-configure --with-develop .
       - name: perl Makefile.PL
         run: perl Makefile.PL
       - name: make
