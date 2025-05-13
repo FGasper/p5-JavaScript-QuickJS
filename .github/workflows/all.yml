@@ -85,7 +85,8 @@ jobs:
         with:
             submodules: recursive
       - run: perl -V
-      - run: echo "deb http://archive.debian.org/debian buster-backports main" | tee /etc/apt/sources.list.d/buster-backports.list
+      - run: ls -laR /etc/apt
+      - run: cat /etc/apt/sources.list
       - run: apt update
       - run: apt install -y curl
       - name: Install Dependencies
