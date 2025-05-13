@@ -44,9 +44,7 @@ typedef struct {
 } ctx_opaque_s;
 
 const char* __jstype_name_back[] = {
-    [JS_TAG_BIG_DECIMAL - JS_TAG_FIRST] = "big decimal",
     [JS_TAG_BIG_INT - JS_TAG_FIRST] = "big integer",
-    [JS_TAG_BIG_FLOAT - JS_TAG_FIRST] = "big float",
     [JS_TAG_SYMBOL - JS_TAG_FIRST] = "symbol",
     [JS_TAG_MODULE - JS_TAG_FIRST] = "module",
     [JS_TAG_OBJECT - JS_TAG_FIRST] = "object",
