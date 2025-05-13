@@ -325,7 +325,7 @@ sub postamble {
     return <<"MAKE_FRAG"
 
 $libpath:
-\t+$make -C quickjs -f '$PERL_QJS_MAKEFILE_PATH' libquickjs.a
+\t+$make -C quickjs --file='$PERL_QJS_MAKEFILE_PATH' libquickjs.a
 MAKE_FRAG
 }
 
