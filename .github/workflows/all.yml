@@ -200,10 +200,10 @@ jobs:
 
     steps:
       - name: Set up Cygwin
-        uses: cygwin/cygwin-install-action@master
+        uses: cygwin/cygwin-install-action@v5
         with:
-            packages: perl_base perl-ExtUtils-MakeMaker make gcc-g++ libcrypt-devel libnsl-devel bash
-      - uses: actions/checkout@main
+            packages: perl perl-ExtUtils-MakeMaker make gcc-g++ libcrypt-devel libnsl-devel bash
+      - uses: actions/checkout@v4
         with:
             submodules: recursive
       - shell: C:\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
@@ -213,7 +213,7 @@ jobs:
             cd $GITHUB_WORKSPACE;
             cpanm --verbose --notest --installdeps --with-configure --with-develop .
             perl Makefile.PL
-            make -j3 -j3 test
+            make -j3 test
 
 # It’s awfully slow, and it sometimes hangs.
 #  Solaris:
