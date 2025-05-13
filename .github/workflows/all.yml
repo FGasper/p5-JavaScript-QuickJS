@@ -85,8 +85,7 @@ jobs:
         with:
             submodules: recursive
       - run: perl -V
-      - run: ls -laR /etc/apt
-      - run: cat /etc/apt/sources.list
+      - run: rm -f /etc/apt/sources.list.d/buster-backports.list
       - run: apt update
       - run: apt install -y curl
       - name: Install Dependencies
