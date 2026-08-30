@@ -7,7 +7,7 @@ use warnings;
 
 =head1 NAME
 
-JavaScript::QuickJS - Run JavaScript via L<QuickJS|https://bellard.org/quickjs> in Perl
+JavaScript::QuickJS - Run JavaScript via L<QuickJS-NG|https://quickjs-ng.github.io/quickjs/> in Perl
 
 =head1 SYNOPSIS
 
@@ -32,10 +32,11 @@ Quick and dirty …
 
 =head1 DESCRIPTION
 
-This library embeds Fabrice Bellard’s L<QuickJS|https://bellard.org/quickjs>
-engine into a Perl XS module. You can thus run JavaScript
-(L<ES2020|https://tc39.github.io/ecma262/> specification) directly in your
-Perl programs.
+This library embeds L<QuickJS-NG|https://quickjs-ng.github.io/quickjs/>,
+a fork of Fabrice Bellard’s QuickJS, into a Perl XS module. You can thus
+run JavaScript directly in your Perl programs.
+
+This distribution bundles QuickJS-NG v0.16.2.
 
 This distribution includes all needed C code; unlike with most XS modules
 that interface with C libraries, you don’t need QuickJS pre-installed on
@@ -54,6 +55,11 @@ XSLoader::load( __PACKAGE__, $VERSION );
 # ----------------------------------------------------------------------
 
 =head1 METHODS
+
+=head2 $version = I<CLASS>->engine_version()
+
+Returns the bundled JavaScript engine's version, such as C<0.16.2>.
+This differs from the Perl module's C<$VERSION>. Also callable on an instance.
 
 =head2 $obj = I<CLASS>->new( %CONFIG_OPTS )
 
@@ -153,6 +159,12 @@ Blocks until all of I<OBJ>’s pending work (if any) is complete.
 
 For example, if you C<eval()> some code that creates a promise, call
 this to wait for that promise to complete.
+
+Exceptions from pending jobs or timers are rethrown as Perl exceptions.
+After draining pending work, an unhandled promise rejection is also rethrown
+instead of terminating the Perl process. Handlers attached before or during
+C<await()> can handle the rejection. If several rejections remain, C<await()>
+reports the first and clears the pending rejection list.
 
 Returns I<OBJ>.
 
@@ -325,11 +337,13 @@ compile-time options mention long doubles or quad math.
 
 =head1 OS SUPPORT
 
-QuickJS supports Linux, macOS, and Windows natively, so these work without
-issue.
+QuickJS-NG includes platform support for Linux, macOS, Windows, FreeBSD,
+OpenBSD, and Cygwin. This distribution no longer patches the engine sources
+during configuration.
 
-FreeBSD, OpenBSD, & Cygwin work after a few patches that we apply when
-building this library. (Hopefully these will eventually merge into QuickJS.)
+Building requires a C11-capable compiler and Perl's usual XS build tools.
+The bundled library sources are compiled by ExtUtils::MakeMaker; CMake and
+a separate QuickJS installation are not required.
 
 =head1 LIBATOMIC
 
