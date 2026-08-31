@@ -114,6 +114,7 @@ const char* const DATE_SETTER_FROM_IX[] = {
 #define _jstype_name(typenum) __jstype_name_back[ typenum - JS_TAG_FIRST ]
 
 static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp);
+static SV* _get_exception_from_jsvalue(pTHX_ JSContext* ctx, JSValue jsret);
 
 static inline SV* _JSValue_special_object_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp, const char* class) {
     assert(!*err_svp);
@@ -141,8 +142,10 @@ static inline SV* _JSValue_object_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV
 
     int propnameserr = JS_GetOwnPropertyNames(ctx, &tab_atom, &tab_atom_count, jsval, JS_GPN_STRING_MASK);
 
-    PERL_UNUSED_VAR(propnameserr);
-    assert(!propnameserr);
+    if (propnameserr) {
+        *err_svp = _get_exception_from_jsvalue(aTHX_ ctx, JS_EXCEPTION);
+        return NULL;
+    }
 
     HV* hv = newHV();
 
@@ -162,11 +165,12 @@ static inline SV* _JSValue_object_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV
         JS_FreeCString(ctx, keystr);
         JS_FreeValue(ctx, key);
         JS_FreeValue(ctx, value);
-        JS_FreeAtom(ctx, tab_atom[i].atom);
-
         if (!val_sv) break;
     }
 
+    for (uint32_t i = 0; i < tab_atom_count; i++) {
+        JS_FreeAtom(ctx, tab_atom[i].atom);
+    }
     js_free(ctx, tab_atom);
 
     if (*err_svp) {
@@ -180,8 +184,13 @@ static inline SV* _JSValue_object_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV
 static inline SV* _JSValue_array_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp) {
     JSValue jslen = JS_GetPropertyStr(ctx, jsval, "length");
     uint32_t len;
-    JS_ToUint32(ctx, &len, jslen);
+    int len_error = JS_IsException(jslen) || JS_ToUint32(ctx, &len, jslen);
     JS_FreeValue(ctx, jslen);
+
+    if (len_error) {
+        *err_svp = _get_exception_from_jsvalue(aTHX_ ctx, JS_EXCEPTION);
+        return NULL;
+    }
 
     AV* av = newAV();
 
@@ -208,15 +217,18 @@ static inline SV* _JSValue_array_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV*
     return newRV_noinc((SV*) av);
 }
 
-/* NO JS exceptions allowed here! */
 static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp) {
     assert(!*err_svp);
 
     SV* RETVAL;
+    int is_array;
 
     int tag = JS_VALUE_GET_NORM_TAG(jsval);
 
-    assert(tag != JS_TAG_EXCEPTION);
+    if (JS_IsException(jsval)) {
+        *err_svp = _get_exception_from_jsvalue(aTHX_ ctx, jsval);
+        return NULL;
+    }
 
     switch (tag) {
         case JS_TAG_STRING:
@@ -267,7 +279,11 @@ static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp) {
 
                 RETVAL = func_sv;
             }
-            else if (JS_IsArray(ctx, jsval)) {
+            else if ((is_array = JS_IsArray(ctx, jsval)) < 0) {
+                *err_svp = _get_exception_from_jsvalue(aTHX_ ctx, JS_EXCEPTION);
+                return NULL;
+            }
+            else if (is_array) {
                 RETVAL = _JSValue_array_to_SV(aTHX_ ctx, jsval, err_svp);
             }
             else {
@@ -594,9 +610,14 @@ static SV* _get_exception_from_jsvalue(pTHX_ JSContext* ctx, JSValue jsret) {
     STRLEN strlen;
     const char* str = JS_ToCStringLen(ctx, &strlen, jserr);
 
-    err = newSVpvn_flags(str, strlen, SVf_UTF8);
-
-    JS_FreeCString(ctx, str);
+    if (str) {
+        err = newSVpvn_flags(str, strlen, SVf_UTF8);
+        JS_FreeCString(ctx, str);
+    }
+    else {
+        err = newSVpvs("JavaScript exception could not be converted to a string");
+        JS_FreeValue(ctx, JS_GetException(ctx));
+    }
     JS_FreeValue(ctx, jserr);
 
     return err;
