@@ -30,6 +30,12 @@ typedef struct {
     pid_t pid;
 } perl_qjs_jsobj_s;
 
+typedef struct pending_rejection_s {
+    JSValue promise;
+    JSValue reason;
+    struct pending_rejection_s *next;
+} pending_rejection_s;
+
 typedef struct {
 #ifdef MULTIPLICITY
     tTHX aTHX;
@@ -37,16 +43,15 @@ typedef struct {
     SV** svs;
     U32 svs_count;
     U32 refcount;
-    bool ran_js_std_init_handlers;
     JSValue regexp_jsvalue;
     JSValue date_jsvalue;
     JSValue promise_jsvalue;
+    pending_rejection_s *rejections;
 } ctx_opaque_s;
 
 const char* __jstype_name_back[] = {
-    [JS_TAG_BIG_DECIMAL - JS_TAG_FIRST] = "big decimal",
     [JS_TAG_BIG_INT - JS_TAG_FIRST] = "big integer",
-    [JS_TAG_BIG_FLOAT - JS_TAG_FIRST] = "big float",
+    [JS_TAG_SHORT_BIG_INT - JS_TAG_FIRST] = "big integer",
     [JS_TAG_SYMBOL - JS_TAG_FIRST] = "symbol",
     [JS_TAG_MODULE - JS_TAG_FIRST] = "module",
     [JS_TAG_OBJECT - JS_TAG_FIRST] = "object",
@@ -114,6 +119,22 @@ const char* const DATE_SETTER_FROM_IX[] = {
 #define _jstype_name(typenum) __jstype_name_back[ typenum - JS_TAG_FIRST ]
 
 static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp);
+static SV* _get_exception_from_jsvalue(pTHX_ JSContext* ctx, JSValue jsret);
+
+static int _js_is_array(JSContext *ctx, JSValueConst value) {
+    JSValue target = JS_DupValue(ctx, value);
+
+    while (JS_IsProxy(target)) {
+        JSValue next = JS_GetProxyTarget(ctx, target);
+        JS_FreeValue(ctx, target);
+        if (JS_IsException(next)) return -1;
+        target = next;
+    }
+
+    int is_array = JS_IsArray(target);
+    JS_FreeValue(ctx, target);
+    return is_array;
+}
 
 static inline SV* _JSValue_special_object_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp, const char* class) {
     assert(!*err_svp);
@@ -141,8 +162,10 @@ static inline SV* _JSValue_object_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV
 
     int propnameserr = JS_GetOwnPropertyNames(ctx, &tab_atom, &tab_atom_count, jsval, JS_GPN_STRING_MASK);
 
-    PERL_UNUSED_VAR(propnameserr);
-    assert(!propnameserr);
+    if (propnameserr) {
+        *err_svp = _get_exception_from_jsvalue(aTHX_ ctx, JS_EXCEPTION);
+        return NULL;
+    }
 
     HV* hv = newHV();
 
@@ -162,12 +185,11 @@ static inline SV* _JSValue_object_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV
         JS_FreeCString(ctx, keystr);
         JS_FreeValue(ctx, key);
         JS_FreeValue(ctx, value);
-        JS_FreeAtom(ctx, tab_atom[i].atom);
 
         if (!val_sv) break;
     }
 
-    js_free(ctx, tab_atom);
+    JS_FreePropertyEnum(ctx, tab_atom, tab_atom_count);
 
     if (*err_svp) {
         SvREFCNT_dec( (SV*) hv );
@@ -180,8 +202,12 @@ static inline SV* _JSValue_object_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV
 static inline SV* _JSValue_array_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp) {
     JSValue jslen = JS_GetPropertyStr(ctx, jsval, "length");
     uint32_t len;
-    JS_ToUint32(ctx, &len, jslen);
+    int len_error = JS_IsException(jslen) || JS_ToUint32(ctx, &len, jslen);
     JS_FreeValue(ctx, jslen);
+    if (len_error) {
+        *err_svp = _get_exception_from_jsvalue(aTHX_ ctx, JS_EXCEPTION);
+        return NULL;
+    }
 
     AV* av = newAV();
 
@@ -208,7 +234,6 @@ static inline SV* _JSValue_array_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV*
     return newRV_noinc((SV*) av);
 }
 
-/* NO JS exceptions allowed here! */
 static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp) {
     assert(!*err_svp);
 
@@ -216,10 +241,14 @@ static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp) {
 
     int tag = JS_VALUE_GET_NORM_TAG(jsval);
 
-    assert(tag != JS_TAG_EXCEPTION);
+    if (JS_IsException(jsval)) {
+        *err_svp = _get_exception_from_jsvalue(aTHX_ ctx, jsval);
+        return NULL;
+    }
 
     switch (tag) {
         case JS_TAG_STRING:
+        case JS_TAG_STRING_ROPE:
             STMT_START {
                 STRLEN strlen;
                 const char* str = JS_ToCStringLen(ctx, &strlen, jsval);
@@ -245,7 +274,8 @@ static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp) {
             RETVAL = &PL_sv_undef;
             break;
 
-        case JS_TAG_OBJECT:
+        case JS_TAG_OBJECT: STMT_START {
+            int is_array;
             if (JS_IsFunction(ctx, jsval)) {
                 load_module(
                     PERL_LOADMOD_NOIMPORT,
@@ -267,7 +297,11 @@ static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp) {
 
                 RETVAL = func_sv;
             }
-            else if (JS_IsArray(ctx, jsval)) {
+            else if ((is_array = _js_is_array(ctx, jsval)) < 0) {
+                *err_svp = _get_exception_from_jsvalue(aTHX_ ctx, JS_EXCEPTION);
+                return NULL;
+            }
+            else if (is_array) {
                 RETVAL = _JSValue_array_to_SV(aTHX_ ctx, jsval, err_svp);
             }
             else {
@@ -288,6 +322,7 @@ static SV* _JSValue_to_SV (pTHX_ JSContext* ctx, JSValue jsval, SV** err_svp) {
                 }
             }
 
+        } STMT_END;
             break;
 
         default:
@@ -359,7 +394,7 @@ static JSValue _sv_error_to_jsvalue(pTHX_ JSContext* ctx, SV* error) {
     return to_js;
 }
 
-static JSValue __do_perl_callback(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int jsmagic, JSValue *func_data) {
+static JSValue __do_perl_callback(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int jsmagic, void *opaque) {
 
 #ifdef MULTIPLICITY
     ctx_opaque_s* ctxdata = JS_GetContextOpaque(ctx);
@@ -367,7 +402,7 @@ static JSValue __do_perl_callback(JSContext *ctx, JSValueConst this_val, int arg
 #endif
 
     PERL_UNUSED_VAR(jsmagic);
-    SV* cb_sv = ((SV**) func_data)[0];
+    SV* cb_sv = opaque;
 
     SV* args[argc + 1];
     args[argc] = NULL;
@@ -475,14 +510,12 @@ static JSValue _sv_to_jsvalue(pTHX_ JSContext* ctx, SV* value, SV** error_svp) {
                 case SVt_PVCV:
                     _ctx_add_sv(aTHX_ ctx, value);
 
-                    /* A hack to store our callback via the func_data pointer: */
-                    JSValue dummy = JS_MKPTR(JS_TAG_INT, value);
-
-                    return JS_NewCFunctionData(
+                    return JS_NewCClosure(
                         ctx,
                         __do_perl_callback,
+                        "", NULL,
                         0, 0,
-                        1, &dummy
+                        value
                     );
 
                 case SVt_PVAV: STMT_START {
@@ -576,6 +609,45 @@ static JSContext* _create_new_jsctx( pTHX_ JSRuntime *rt ) {
     return ctx;
 }
 
+static void _clear_rejections(pTHX_ JSContext *ctx) {
+    ctx_opaque_s *ctxdata = JS_GetContextOpaque(ctx);
+    while (ctxdata->rejections) {
+        pending_rejection_s *entry = ctxdata->rejections;
+        ctxdata->rejections = entry->next;
+        JS_FreeValue(ctx, entry->promise);
+        JS_FreeValue(ctx, entry->reason);
+        Safefree(entry);
+    }
+}
+
+static void _promise_rejection_tracker(JSContext *ctx, JSValueConst promise,
+                                      JSValueConst reason, bool is_handled,
+                                      void *opaque) {
+    ctx_opaque_s *ctxdata = JS_GetContextOpaque(ctx);
+#ifdef MULTIPLICITY
+    pTHX = ctxdata->aTHX;
+#endif
+    pending_rejection_s **entry = &ctxdata->rejections;
+    while (*entry && !JS_IsStrictEqual(ctx, (*entry)->promise, promise)) {
+        entry = &(*entry)->next;
+    }
+
+    if (is_handled) {
+        if (*entry) {
+            pending_rejection_s *handled = *entry;
+            *entry = handled->next;
+            JS_FreeValue(ctx, handled->promise);
+            JS_FreeValue(ctx, handled->reason);
+            Safefree(handled);
+        }
+    }
+    else if (!*entry) {
+        Newxz(*entry, 1, pending_rejection_s);
+        (*entry)->promise = JS_DupValue(ctx, promise);
+        (*entry)->reason = JS_DupValue(ctx, reason);
+    }
+}
+
 static SV* _get_exception_from_jsvalue(pTHX_ JSContext* ctx, JSValue jsret) {
     SV* err;
 
@@ -594,9 +666,14 @@ static SV* _get_exception_from_jsvalue(pTHX_ JSContext* ctx, JSValue jsret) {
     STRLEN strlen;
     const char* str = JS_ToCStringLen(ctx, &strlen, jserr);
 
-    err = newSVpvn_flags(str, strlen, SVf_UTF8);
-
-    JS_FreeCString(ctx, str);
+    if (str) {
+        err = newSVpvn_flags(str, strlen, SVf_UTF8);
+        JS_FreeCString(ctx, str);
+    }
+    else {
+        err = newSVpvs("JavaScript exception could not be converted to a string");
+        JS_FreeValue(ctx, JS_GetException(ctx));
+    }
     JS_FreeValue(ctx, jserr);
 
     return err;
@@ -626,6 +703,7 @@ static void _free_jsctx(pTHX_ JSContext* ctx) {
     ctx_opaque_s* ctxdata = JS_GetContextOpaque(ctx);
 
     if (--ctxdata->refcount == 0) {
+        _clear_rejections(aTHX_ ctx);
         JS_FreeValue(ctx, ctxdata->regexp_jsvalue);
         JS_FreeValue(ctx, ctxdata->date_jsvalue);
         JS_FreeValue(ctx, ctxdata->promise_jsvalue);
@@ -636,10 +714,9 @@ static void _free_jsctx(pTHX_ JSContext* ctx) {
             SvREFCNT_dec(ctxdata->svs[i]);
         }
 
-        if (ctxdata->ran_js_std_init_handlers) {
-            js_std_free_handlers(rt);
-        }
+        js_std_free_handlers(rt);
 
+        Safefree(ctxdata->svs);
         Safefree(ctxdata);
 
         JS_FreeContext(ctx);
@@ -649,7 +726,8 @@ static void _free_jsctx(pTHX_ JSContext* ctx) {
 }
 
 static JSModuleDef *pqjs_module_loader(JSContext *ctx,
-                              const char *module_name, void *opaque) {
+                              const char *module_name, void *opaque,
+                              JSValueConst attributes) {
     char** module_base_path_p = (char**) opaque;
 
     char* module_base_path = *module_base_path_p;
@@ -666,10 +744,10 @@ static JSModuleDef *pqjs_module_loader(JSContext *ctx,
         memcpy(real_path + base_path_len, module_name, module_name_len);
         real_path[base_path_len + module_name_len] = 0;
 
-        moduledef = js_module_loader(ctx, real_path, NULL);
+        moduledef = js_module_loader(ctx, real_path, NULL, attributes);
     }
     else {
-        moduledef = js_module_loader(ctx, module_name, NULL);
+        moduledef = js_module_loader(ctx, module_name, NULL, attributes);
     }
 
     return moduledef;
@@ -746,14 +824,22 @@ MODULE = JavaScript::QuickJS        PACKAGE = JavaScript::QuickJS
 
 PROTOTYPES: DISABLE
 
+const char*
+engine_version (SV* invocant)
+    CODE:
+        PERL_UNUSED_VAR(invocant);
+        RETVAL = JS_GetVersion();
+    OUTPUT:
+        RETVAL
+
 SV*
 _new (SV* classname_sv)
     CODE:
         JSRuntime *rt = JS_NewRuntime();
-        JS_SetHostPromiseRejectionTracker(rt, js_std_promise_rejection_tracker, NULL);
-        JS_SetModuleLoaderFunc(rt, NULL, js_module_loader, NULL);
+        js_std_init_handlers(rt);
 
         JSContext *ctx = _create_new_jsctx(aTHX_ rt);
+        JS_SetHostPromiseRejectionTracker(rt, _promise_rejection_tracker, NULL);
 
         RETVAL = exs_new_structref(perl_qjs_s, SvPVbyte_nolen(classname_sv));
         perl_qjs_s* pqjs = exs_structref_ptr(RETVAL);
@@ -763,10 +849,11 @@ _new (SV* classname_sv)
             .pid = getpid(),
         };
 
-        JS_SetModuleLoaderFunc(
+        JS_SetModuleLoaderFunc2(
             rt,
             NULL,
             pqjs_module_loader,
+            js_module_check_attributes,
             &pqjs->module_base_path
         );
 
@@ -833,15 +920,6 @@ std (SV* self_sv)
                 if (!pqjs->added_os) {
                     js_init_module_os(pqjs->ctx, "os");
                     pqjs->added_os = true;
-
-                    ctx_opaque_s* ctxdata = JS_GetContextOpaque(pqjs->ctx);
-
-                    if (!ctxdata->ran_js_std_init_handlers) {
-                        JSRuntime *rt = JS_GetRuntime(pqjs->ctx);
-                        js_std_init_handlers(rt);
-
-                        ctxdata->ran_js_std_init_handlers = true;
-                    }
 
                     _import_module_to_global(aTHX_ pqjs->ctx, "os");
                 }
@@ -993,7 +1071,17 @@ await (SV* self_sv)
         perl_qjs_s* pqjs = exs_structref_ptr(self_sv);
         JSContext *ctx = pqjs->ctx;
 
-        js_std_loop(ctx);
+        if (js_std_loop(ctx)) {
+            croak_sv(_get_exception_from_jsvalue(aTHX_ ctx, JS_EXCEPTION));
+        }
+
+        ctx_opaque_s *ctxdata = JS_GetContextOpaque(ctx);
+        if (ctxdata->rejections) {
+            JSValue reason = JS_DupValue(ctx, ctxdata->rejections->reason);
+            _clear_rejections(aTHX_ ctx);
+            JS_Throw(ctx, reason);
+            croak_sv(_get_exception_from_jsvalue(aTHX_ ctx, JS_EXCEPTION));
+        }
 
         RETVAL = SvREFCNT_inc(self_sv);
 
@@ -1261,14 +1349,14 @@ call( SV* self_sv, SV* this_sv=&PL_sv_undef, ... )
     CODE:
         perl_qjs_jsobj_s* pqjs = exs_structref_ptr(self_sv);
 
-        U32 params_count = items - FUNC_CALL_INITIAL_ARGS;
+        U32 params_count = items > FUNC_CALL_INITIAL_ARGS ? items - FUNC_CALL_INITIAL_ARGS : 0;
 
         SV* error = NULL;
 
         JSValue thisjs = _sv_to_jsvalue(aTHX_ pqjs->ctx, this_sv, &error);
         if (error) croak_sv(error);
 
-        JSValue jsvars[params_count];
+        JSValue jsvars[params_count + 1];
 
         error = _svs_to_jsvars( aTHX_ pqjs->ctx, params_count, &ST(FUNC_CALL_INITIAL_ARGS), jsvars );
         if (error) {
