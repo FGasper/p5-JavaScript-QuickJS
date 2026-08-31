@@ -640,6 +640,7 @@ static void _free_jsctx(pTHX_ JSContext* ctx) {
             js_std_free_handlers(rt);
         }
 
+        Safefree(ctxdata->svs);
         Safefree(ctxdata);
 
         JS_FreeContext(ctx);
