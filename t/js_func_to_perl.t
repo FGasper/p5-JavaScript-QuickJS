@@ -42,4 +42,12 @@ isa_ok($cb2, 'JavaScript::QuickJS::Function', 'JS callback (declaration)');
 is($cb2->length(), 2, 'length() gives arity');
 is($cb2->name(), q<myFunc>, 'name()');
 
+my $no_args = $js->eval('(function () { return arguments.length; })');
+is($no_args->call(), 0, 'call() accepts an omitted receiver and no arguments');
+is($no_args->call(undef), 0, 'call(undef) passes no arguments');
+is($no_args->(), 0, 'overloaded invocation passes no arguments');
+
+my $receiver = $js->eval('(function () { return this.answer; })');
+is($receiver->call({ answer => 42 }), 42, 'explicit receiver with no arguments');
+
 done_testing();
