@@ -338,12 +338,9 @@ compile-time options mention long doubles or quad math.
 =head1 OS SUPPORT
 
 QuickJS-NG includes platform support for Linux, macOS, Windows, FreeBSD,
-OpenBSD, and Cygwin. This distribution no longer patches the engine sources
-during configuration.
+OpenBSD, and Cygwin.
 
 Building requires a C11-capable compiler and Perl's usual XS build tools.
-The bundled library sources are compiled by ExtUtils::MakeMaker; CMake and
-a separate QuickJS installation are not required.
 
 =head1 LIBATOMIC
 

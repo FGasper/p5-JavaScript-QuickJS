@@ -2,8 +2,7 @@ Revision history for Perl extension JavaScript::QuickJS:
 
 Unreleased
 - Replace the bundled QuickJS fork with QuickJS-NG v0.16.2.
-- Build the engine with Perl's compiler and XS flags, without rewriting
-  upstream sources or requiring CMake.
+- Build the engine with Perl's compiler and XS flags.
 - Adapt module loading, string and BigInt tags, array proxies, and Perl
   callback storage to the new C API.
 - Add engine_version() to report the bundled engine version.
