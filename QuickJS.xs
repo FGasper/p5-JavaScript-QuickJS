@@ -1261,14 +1261,14 @@ call( SV* self_sv, SV* this_sv=&PL_sv_undef, ... )
     CODE:
         perl_qjs_jsobj_s* pqjs = exs_structref_ptr(self_sv);
 
-        U32 params_count = items - FUNC_CALL_INITIAL_ARGS;
+        U32 params_count = items > FUNC_CALL_INITIAL_ARGS ? items - FUNC_CALL_INITIAL_ARGS : 0;
 
         SV* error = NULL;
 
         JSValue thisjs = _sv_to_jsvalue(aTHX_ pqjs->ctx, this_sv, &error);
         if (error) croak_sv(error);
 
-        JSValue jsvars[params_count];
+        JSValue jsvars[params_count + 1];
 
         error = _svs_to_jsvars( aTHX_ pqjs->ctx, params_count, &ST(FUNC_CALL_INITIAL_ARGS), jsvars );
         if (error) {
