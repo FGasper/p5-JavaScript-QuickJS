@@ -90,7 +90,7 @@ jobs:
           sed -i \
             -e 's|deb.debian.org/debian|archive.debian.org/debian|g' \
             -e 's|security.debian.org/debian-security|archive.debian.org/debian-security|g' \
-            /etc/apt/sources.list
+            /etc/apt/sources.list /etc/apt/sources.list.d/*.list
           apt-get -o Acquire::Check-Valid-Until=false update
           apt-get install -y curl
       - name: Install Dependencies
@@ -203,7 +203,9 @@ jobs:
       - run: |
           $env:PATH = "C:\Strawberry\c\bin;$env:PATH"
           perl Makefile.PL CC=C:/Strawberry/c/bin/gcc.exe LD=C:/Strawberry/c/bin/g++.exe
-      - run: gmake
+      - run: |
+          $env:PATH = "C:\Strawberry\c\bin;$env:PATH"
+          gmake
       - name: Run Tests
         run: prove -wlvmb t
 
@@ -282,5 +284,5 @@ jobs:
             sudo ${{ matrix.os.pkginstall }}
             curl -L https://cpanmin.us | sudo perl - --notest --installdeps --with-configure --with-develop .
             perl Makefile.PL
-            make -j3 -j3
+            make
             PERL_DL_NONLAZY=1 prove -wlvmb t
