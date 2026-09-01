@@ -41,7 +41,7 @@ jobs:
       image: perldocker/perl-tester:${{ matrix.perl-version }}
 
     steps:
-      - uses: actions/checkout@main
+      - uses: actions/checkout@v6
         with:
             submodules: recursive
       - name: perl -V
@@ -81,12 +81,18 @@ jobs:
       image: simcop2387/perl-tester:${{ matrix.perl-version }}-${{ matrix.perl-type }}
 
     steps:
-      - uses: actions/checkout@main
+      - uses: actions/checkout@v6
         with:
             submodules: recursive
       - run: perl -V
-      - run: apt update
-      - run: apt install -y curl
+      - name: Use archived Debian repositories
+        run: |
+          sed -i \
+            -e 's|deb.debian.org/debian|archive.debian.org/debian|g' \
+            -e 's|security.debian.org/debian-security|archive.debian.org/debian-security|g' \
+            /etc/apt/sources.list /etc/apt/sources.list.d/*.list
+          apt-get -o Acquire::Check-Valid-Until=false update
+          apt-get install -y curl
       - name: Install Dependencies
         run: curl -L https://cpanmin.us | perl - --notest --installdeps --with-configure --with-develop .
       - name: perl Makefile.PL
@@ -101,35 +107,34 @@ jobs:
   linux-centos7:
     runs-on: ubuntu-latest
 
-    container:
-      image: centos:centos7
-
     steps:
-
-      # CentOS 7’s git is too old for submodules.
-      - run: yum -y install https://packages.endpointdev.com/rhel/7/os/x86_64/endpoint-repo.x86_64.rpm
-      - run: yum -y update
-      - run: yum install -y git make gcc curl perl-ExtUtils-MakeMaker
-      - uses: actions/checkout@v3 # needed for old node.js
+      - uses: actions/checkout@v6
         with:
             submodules: recursive
-      - run: perl -V
-      - name: Install Dependencies
-        run: curl https://cpanmin.us | perl - --notest --installdeps --with-configure --with-develop .
-      - name: perl Makefile.PL
-        run: perl Makefile.PL
-      - name: make
-        run: make -j3 -j3
-      - name: Run Tests
-        run: prove -wlvmb t
-        env:
-            PERL_DL_NONLAZY: 1
+      - name: Run tests on CentOS 7
+        run: |
+          docker run --rm --interactive --mount type=bind,source=$(pwd),target=/host centos:centos7 bash -c '
+            set -e
+            sed -i \
+              -e "s|^mirrorlist=|#mirrorlist=|" \
+              -e "s|^#baseurl=http://mirror.centos.org/centos/\$releasever|baseurl=https://vault.centos.org/7.9.2009|" \
+              /etc/yum.repos.d/CentOS-*.repo
+            yum -y install https://packages.endpointdev.com/rhel/7/os/x86_64/endpoint-repo.x86_64.rpm
+            yum -y update
+            yum install -y git make gcc curl perl-ExtUtils-MakeMaker
+            cd /host
+            perl -V
+            curl https://cpanmin.us | perl - --notest --installdeps --with-configure --with-develop .
+            perl Makefile.PL
+            make -j3 -j3
+            PERL_DL_NONLAZY=1 prove -wlvmb t
+          '
 
   mac:
     runs-on: macOS-latest
 
     steps:
-      - uses: actions/checkout@main
+      - uses: actions/checkout@v6
         with:
             submodules: recursive
       - name: Set up Perl
@@ -156,26 +161,31 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-          - i386
-          - arm32v6
-          - arm32v7
-          - arm64v8
-          - s390x
+          - name: i386
+            docker: linux/386
+          - name: arm32v6
+            docker: linux/arm/v6
+          - name: arm32v7
+            docker: linux/arm/v7
+          - name: arm64v8
+            docker: linux/arm64
+          - name: s390x
+            docker: linux/s390x
 
     steps:
-      - uses: actions/checkout@main
+      - uses: actions/checkout@v6
         with:
             submodules: recursive
-      - name: Get the qemu container
-        run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-      - name: Run tests on ${{ matrix.platform }}
-        run: docker run --rm --interactive --mount type=bind,source=$(pwd),target=/host ${{ matrix.platform }}/alpine sh -c "apk add curl wget perl perl-dev make gcc libc-dev; cd /host; perl -V; curl -L https://cpanmin.us | perl - --verbose --notest --installdeps --with-configure .; perl Makefile.PL; make -j3 -j3; PERL_DL_NONLAZY=1 prove -wlvmb t"
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Run tests on ${{ matrix.platform.name }}
+        run: docker run --rm --interactive --platform ${{ matrix.platform.docker }} --mount type=bind,source=$(pwd),target=/host alpine sh -c "apk add curl wget perl perl-dev make gcc libc-dev; cd /host; perl -V; curl -L https://cpanmin.us | perl - --verbose --notest --installdeps --with-configure .; perl Makefile.PL; make -j3 -j3; PERL_DL_NONLAZY=1 prove -wlvmb t"
 
   windows:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@main
+      - uses: actions/checkout@v6
         with:
             submodules: recursive
       - name: Set up Perl
@@ -190,8 +200,12 @@ jobs:
       - name: Install Dependencies
         run: curl -L https://cpanmin.us > cpanminus.pl
       - run: perl cpanminus.pl --notest --installdeps --with-develop --with-configure --verbose .
-      - run: perl Makefile.PL
-      - run: gmake
+      - run: |
+          $env:PATH = "C:\Strawberry\c\bin;$env:PATH"
+          perl Makefile.PL CC=C:/Strawberry/c/bin/gcc.exe LD=C:/Strawberry/c/bin/g++.exe
+      - run: |
+          $env:PATH = "C:\Strawberry\c\bin;$env:PATH"
+          gmake
       - name: Run Tests
         run: prove -wlvmb t
 
@@ -200,10 +214,10 @@ jobs:
 
     steps:
       - name: Set up Cygwin
-        uses: cygwin/cygwin-install-action@master
+        uses: cygwin/cygwin-install-action@v6
         with:
-            packages: perl_base perl-ExtUtils-MakeMaker make gcc-g++ libcrypt-devel libnsl-devel bash
-      - uses: actions/checkout@main
+            packages: perl perl-ExtUtils-MakeMaker make gcc-g++ libcrypt-devel libnsl-devel bash
+      - uses: actions/checkout@v6
         with:
             submodules: recursive
       - shell: C:\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
@@ -239,29 +253,29 @@ jobs:
 #            PERL_DL_NONLAZY=1 prove -wlvmb t
 
   BSDs:
-    runs-on: macos-12
+    runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
       matrix:
         os:
           - name: freebsd
-            version: '13.0'
+            version: '14.4'
             pkginstall: pkg install -y gmake p5-ExtUtils-MakeMaker
           # - name: freebsd
           #   version: '12.2'
           #   pkginstall: pkg install -y gmake p5-ExtUtils-MakeMaker
           - name: openbsd
-            version: '7.1'
+            version: '7.9'
             pkginstall: pkg_add gmake curl p5-ExtUtils-MakeMaker
 
     steps:
-      - uses: actions/checkout@main
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
 
       - name: Test on ${{ matrix.os.name }}
-        uses: cross-platform-actions/action@master
+        uses: cross-platform-actions/action@v1.5.0
         with:
           operating_system: ${{ matrix.os.name }}
           version: ${{ matrix.os.version }}
@@ -270,5 +284,5 @@ jobs:
             sudo ${{ matrix.os.pkginstall }}
             curl -L https://cpanmin.us | sudo perl - --notest --installdeps --with-configure --with-develop .
             perl Makefile.PL
-            make -j3 -j3
+            make
             PERL_DL_NONLAZY=1 prove -wlvmb t
