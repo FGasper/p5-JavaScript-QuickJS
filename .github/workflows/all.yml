@@ -41,7 +41,7 @@ jobs:
       image: perldocker/perl-tester:${{ matrix.perl-version }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
             submodules: recursive
       - name: perl -V
@@ -81,7 +81,7 @@ jobs:
       image: simcop2387/perl-tester:${{ matrix.perl-version }}-${{ matrix.perl-type }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
             submodules: recursive
       - run: perl -V
@@ -108,7 +108,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
             submodules: recursive
       - name: Run tests on CentOS 7
@@ -134,7 +134,7 @@ jobs:
     runs-on: macOS-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
             submodules: recursive
       - name: Set up Perl
@@ -173,7 +173,7 @@ jobs:
             docker: linux/s390x
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
             submodules: recursive
       - name: Set up QEMU
@@ -185,7 +185,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
             submodules: recursive
       - name: Set up Perl
@@ -214,10 +214,10 @@ jobs:
 
     steps:
       - name: Set up Cygwin
-        uses: cygwin/cygwin-install-action@master
+        uses: cygwin/cygwin-install-action@v6
         with:
             packages: perl perl-ExtUtils-MakeMaker make gcc-g++ libcrypt-devel libnsl-devel bash
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
             submodules: recursive
       - shell: C:\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
@@ -270,7 +270,7 @@ jobs:
             pkginstall: pkg_add gmake curl p5-ExtUtils-MakeMaker
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
 
